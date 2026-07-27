@@ -116,6 +116,18 @@ function findNodeIncludeDir() {
   for (const inc of candidates) {
     if (existsSync(join(inc, "node_api.h"))) return inc;
   }
+  // Bundled Node-API headers (always available after pnpm install).
+  try {
+    const apiHeaders = require("node-api-headers");
+    if (
+      apiHeaders?.include_dir &&
+      existsSync(join(apiHeaders.include_dir, "node_api.h"))
+    ) {
+      return apiHeaders.include_dir;
+    }
+  } catch {
+    // optional until dependency is installed
+  }
   // node-gyp headers cache (Linux/macOS + Windows)
   for (const base of [
     join(home, ".cache/node-gyp"),
@@ -135,23 +147,23 @@ function nodeIncludeDir() {
   const existing = findNodeIncludeDir();
   if (existing) return existing;
 
-  // setup-node / official tarballs often omit headers; fetch via node-gyp.
+  // setup-node omits system headers; fetch a matching node-gyp cache as last resort.
   console.error("info: Node headers missing; installing via node-gyp…");
-  const npx = spawnSync(
+  const install = spawnSync(
     "npx",
     ["--yes", "node-gyp@11", "install", `v${process.versions.node}`],
     { cwd: root, stdio: "inherit", env: process.env, shell: true },
   );
-  if (npx.status !== 0) {
+  if (install.status !== 0) {
     throw new Error(
-      "Node headers not found and node-gyp install failed (expected /usr/include/node or node-gyp cache)",
+      "Node headers not found (install node-api-headers or ensure node-gyp can fetch headers)",
     );
   }
 
   const after = findNodeIncludeDir();
   if (after) return after;
   throw new Error(
-    "Node headers not found after node-gyp install (expected /usr/include/node or node-gyp cache)",
+    "Node headers not found after node-gyp install (expected /usr/include/node, node-api-headers, or node-gyp cache)",
   );
 }
 

@@ -166,7 +166,8 @@ jobs:
           if-no-files-found: warn
 
   macos-x64:
-    runs-on: macos-13
+    # macos-13 was retired Dec 2025; macos-15-intel is the last hosted x64 image.
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v6

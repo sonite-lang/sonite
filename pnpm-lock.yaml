@@ -112,6 +112,9 @@ importers:
       node-addon-api:
         specifier: ^8.3.1
         version: 8.9.0
+      node-api-headers:
+        specifier: ^1.9.0
+        version: 1.9.0
     devDependencies:
       '@sonite/compiler':
         specifier: workspace:*
@@ -1745,6 +1748,9 @@ packages:
   node-addon-api@8.9.0:
     resolution: {integrity: sha512-ekZMeaaIzSQTSpr7X2X3iJM7lTzgnx8ahAG9pJfT/7+14mlEM8ZYQ9cgCDvSSRbReFK0oHli3WrZdCiRsgAT9Q==}
     engines: {node: ^18 || ^20 || >= 21}
+
+  node-api-headers@1.9.0:
+    resolution: {integrity: sha512-2oNILP4jXwRB4ywnYKjVk1YyJ96n2D4EOVJO6S3oYZ5PtbJrw3Yt9TpAuX3nBLMuzn74rnfGQrv13pS9vC+YiA==}
 
   node-sarif-builder@3.4.0:
     resolution: {integrity: sha512-tGnJW6OKRii9u/b2WiUViTJS+h7Apxx17qsMUjsUeNDiMMX5ZFf8F8Fcz7PAQ6omvOxHZtvDTmOYKJQwmfpjeg==}
@@ -3808,6 +3814,8 @@ snapshots:
     optional: true
 
   node-addon-api@8.9.0: {}
+
+  node-api-headers@1.9.0: {}
 
   node-sarif-builder@3.4.0:
     dependencies:

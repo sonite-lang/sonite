@@ -23,7 +23,7 @@ Validated locally on Linux x64 (2026-07-27): ASAN, UBSAN, LSAN, runtime stress (
 | KI-015 | Official website not shipped | informational | all | docs | Use [docs/README.md](docs/README.md) | Website |
 | KI-016 | Official install URLs on sonite.dev may lag GitHub Releases | informational | all | install | Use GitHub raw URL or `SONITE_RELEASE_BASE` | Website / CDN |
 | KI-017 | Debug builds emit `invalid !dbg metadata attachment` warnings; LLVM ignores bad debug info | major | all | debugging, DWARF | Use `sn build --release` when debug info is not needed; binaries still link and run | Fix DILocalVariable / dbg attach scopes |
-| KI-018 | Cross-platform CI was failing at `pnpm install` (LLVM postinstall needs Node headers under `actions/setup-node`) | critical | CI matrix | release CI | Fixed in-tree: `SONITE_SKIP_NATIVE_BUILD=1` on install + auto `node-gyp install` in `build-native.js` — needs commit + green `native-toolchain` before tag | Confirm CI green after push |
+| KI-018 | Cross-platform CI Node headers / retired macOS runners | informational | CI matrix | release CI | Fixed: `SONITE_SKIP_NATIVE_BUILD` on install, `node-api-headers` fallback, `macos-15-intel` for x64 | Confirm CI green after push |
 
 ## Stability
 
@@ -34,7 +34,7 @@ There are **no known blocker-severity** issues in:
 - Package manager lockfile integrity and tarball verification
 - Local linux-x64 standalone installer (`file://` pack of `1.0.0-rc.1`)
 
-**Before tagging `v1.0.0-rc.1`:** push CI fixes (KI-018) and confirm `native-toolchain.yml` is green on all five platforms. Multi-OS installer validation still pending after the Release workflow publishes artifacts.
+**Before tagging `v1.0.0-rc.1`:** push CI fixes (KI-018: Node headers + `macos-15-intel`) and confirm `native-toolchain.yml` is green on all five platforms. Multi-OS installer validation still pending after the Release workflow publishes artifacts.
 
 `sn_map_set` copies keys into GC-managed strings (ASAN stack-use-after-scope fix, 2026-07-27).
 

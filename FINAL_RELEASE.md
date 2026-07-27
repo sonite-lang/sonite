@@ -555,7 +555,7 @@ Your **language/compiler feature set is effectively v1.0-ready**. Local Linux x6
 1. **Standalone installer + pack pipeline** — validated locally for linux-x64
 2. **Runtime stress and sanitizer harnesses** — ASAN/UBSAN/LSAN/stress green
 3. **Docs, CLI self-update, VS Code 1.0.0 VSIX, performance baselines** — ready; VSIX installed into Cursor
-4. **Blocking before tag** — push CI Node-headers fix (KI-018), get `native-toolchain` green, then tag `v1.0.0-rc.1`
+4. **Blocking before tag** — push CI fixes (Node headers + `macos-15-intel`), get `native-toolchain` green, then tag `v1.0.0-rc.1`
 5. **Your remaining ops steps** — multi-OS RC matrix, publish npm + Marketplace, host install scripts on sonite.dev (`sonite.dev` DNS not live yet — KI-016), tag `v1.0.0`
 
 The most important next milestone for you:

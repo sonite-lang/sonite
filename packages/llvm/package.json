@@ -36,15 +36,16 @@
     "node": ">=20"
   },
   "dependencies": {
-    "node-addon-api": "^8.3.1"
+    "node-addon-api": "^8.3.1",
+    "node-api-headers": "^1.9.0"
   },
   "optionalDependencies": {
-    "@sonite/llvm-linux-x64": "workspace:*",
     "@sonite/llvm-linux-arm64": "workspace:*",
-    "@sonite/llvm-macos-x64": "workspace:*",
+    "@sonite/llvm-linux-x64": "workspace:*",
     "@sonite/llvm-macos-arm64": "workspace:*",
-    "@sonite/llvm-win32-x64": "workspace:*",
-    "@sonite/llvm-win32-arm64": "workspace:*"
+    "@sonite/llvm-macos-x64": "workspace:*",
+    "@sonite/llvm-win32-arm64": "workspace:*",
+    "@sonite/llvm-win32-x64": "workspace:*"
   },
   "devDependencies": {
     "@sonite/compiler": "workspace:*",

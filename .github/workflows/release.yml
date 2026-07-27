@@ -36,7 +36,8 @@ jobs:
           - platform: macos-arm64
             os: macos-14
           - platform: macos-x64
-            os: macos-13
+            # macos-13 retired Dec 2025; last hosted x64 image until ~Aug 2027.
+            os: macos-15-intel
           - platform: win32-x64
             os: windows-latest
     runs-on: ${{ matrix.os }}
