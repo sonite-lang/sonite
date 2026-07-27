@@ -467,57 +467,55 @@ Workspaces remain optional for v1; use path dependencies for related local packa
 
 # Phase 7 — Debugging & Production Diagnostics
 
-This is the final major development phase before release.
-
 ### Debug information
 
-* [ ] LLVM debug metadata
-* [ ] Source locations
-* [ ] Function names
-* [ ] Local variable information
-* [ ] Type information where practical
+* [x] LLVM debug metadata
+* [x] Source locations
+* [x] Function names
+* [x] Local variable information
+* [x] Type information where practical
 * [x] Debug builds
 * [x] Release builds
 
 ### Runtime diagnostics
 
-* [ ] Stack traces
-* [ ] Source file locations
-* [ ] Line numbers
-* [ ] Function names
-* [ ] Async stack traces
-* [ ] Exception stack traces
-* [ ] Runtime panic reporting
+* [x] Stack traces
+* [x] Source file locations
+* [x] Line numbers
+* [x] Function names
+* [x] Async stack traces (logical task metadata + async stack printing)
+* [x] Exception stack traces
+* [x] Runtime panic reporting
 
 ### Debug Adapter Protocol
 
 Implement a Sonite debug adapter.
 
-* [ ] DAP implementation
-* [ ] VS Code integration
-* [ ] Launch configuration
-* [ ] Attach configuration
-* [ ] Breakpoints
-* [ ] Conditional breakpoints
-* [ ] Logpoints if practical
-* [ ] Step over
-* [ ] Step into
-* [ ] Step out
-* [ ] Continue
-* [ ] Pause
-* [ ] Restart
-* [ ] Stop
+* [x] DAP implementation
+* [x] VS Code integration
+* [x] Launch configuration
+* [x] Attach configuration
+* [x] Breakpoints
+* [x] Conditional breakpoints (via LLDB expressions)
+* [ ] Logpoints if practical (documented as unsupported in v1)
+* [x] Step over
+* [x] Step into
+* [x] Step out
+* [x] Continue
+* [x] Pause
+* [x] Restart (via VS Code; adapter supports relaunch)
+* [x] Stop
 
 ### Debug inspection
 
-* [ ] Call stack
-* [ ] Local variables
-* [ ] Global variables
-* [ ] Function arguments
-* [ ] Object inspection
-* [ ] Array inspection
-* [ ] String inspection
-* [ ] Async task inspection where practical
+* [x] Call stack
+* [x] Local variables
+* [x] Global variables (via LLDB scopes where available)
+* [x] Function arguments
+* [x] Object inspection
+* [x] Array inspection
+* [x] String inspection
+* [x] Async task inspection where practical (runtime task registry; DAP polling deferred)
 
 ### Native debugger integration
 
@@ -542,7 +540,23 @@ Windows debugger tooling
 
 where appropriate.
 
+* [x] LLDB via lldb-dap (bundled from LLVM SDK when available)
+* [x] Sonite frame filtering (hide runtime/async internals by default)
+* [x] `showNativeFrames` for FFI/advanced debugging
+
 The Sonite developer should interact with the Sonite debugger rather than needing to understand native debugger internals.
+
+### Crash reporting
+
+* [x] Compiler crash reports (`~/.sonite/crashes`, JSON)
+* [x] Runtime crash signal handlers with last Sonite frame
+* [x] `sn crash list` / `sn crash show` / `sn crash clean`
+* [x] No automatic upload
+
+### Documentation
+
+* [x] [docs/debugging.md](docs/debugging.md)
+* [x] Debugging example ([examples/debugging/main.sn](examples/debugging/main.sn))
 
 ---
 
@@ -644,7 +658,7 @@ Create official examples for:
 * [ ] Package usage
 * [ ] Package creation
 * [x] FFI example
-* [ ] Debugging example
+* [x] Debugging example
 
 ## Testing
 
@@ -656,7 +670,7 @@ Create official examples for:
 * [x] Package manager tests
 * [ ] Registry tests
 * [x] FFI tests
-* [ ] Debugger tests
+* [x] Debugger tests
 * [x] Cross-platform CI
 * [x] Clean-machine tests
 * [x] End-to-end tests

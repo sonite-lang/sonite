@@ -1,4 +1,12 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { hostname } from "node:os";
 import { join } from "node:path";
 import { InternalError, isInternalError } from "@sonite/compiler";
@@ -10,16 +18,44 @@ export const ISSUE_TRACKER_URL =
 
 const COMPILER_VERSION = "0.0.0";
 
+export type CrashKind = "compiler" | "runtime" | "native";
+
+export interface CrashReportDocument {
+  readonly id: string;
+  readonly kind: CrashKind;
+  readonly version: string;
+  readonly platform: string;
+  readonly targetTriple: string;
+  readonly hostname: string;
+  readonly nodeVersion: string;
+  readonly phase: string;
+  readonly timestamp: string;
+  readonly message: string;
+  readonly stack?: string;
+  readonly sourcePath?: string;
+  readonly signal?: string;
+  readonly lastSoniteFrame?: {
+    readonly file?: string;
+    readonly line?: number;
+    readonly column?: number;
+    readonly function?: string;
+  };
+}
+
 export interface CrashReportInput {
   readonly error: unknown;
   readonly phase?: string;
   readonly sourcePath?: string;
   readonly targetTriple?: string;
+  readonly kind?: CrashKind;
+  readonly signal?: string;
+  readonly lastSoniteFrame?: CrashReportDocument["lastSoniteFrame"];
 }
 
 export interface CrashReportResult {
   readonly reportPath: string;
   readonly userMessage: string;
+  readonly document: CrashReportDocument;
 }
 
 function stackOf(error: unknown): string | undefined {
@@ -46,6 +82,10 @@ function phaseOf(error: unknown, fallback?: string): string {
   return fallback ?? "compiler";
 }
 
+function reportIdFromStamp(stamp: string): string {
+  return stamp;
+}
+
 /**
  * Write a local crash report under `~/.sonite/crashes` (or `SN_CRASHES_DIR`).
  * Never uploads source or the report.
@@ -55,7 +95,8 @@ export function writeCrashReport(input: CrashReportInput): CrashReportResult {
   mkdirSync(dir, { recursive: true });
 
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const reportPath = join(dir, `ice-${stamp}.txt`);
+  const id = reportIdFromStamp(stamp);
+  const reportPath = join(dir, `crash-${stamp}.json`);
 
   let platform = "unknown";
   let triple = input.targetTriple ?? "unknown";
@@ -79,53 +120,43 @@ export function writeCrashReport(input: CrashReportInput): CrashReportResult {
     (isInternalError(input.error) ? input.error.sourceLocation : undefined) ??
     input.sourcePath;
 
-  const lines = [
-    "Sonite compiler internal error report",
-    "=====================================",
-    "",
-    `Compiler version: ${COMPILER_VERSION}`,
-    `Platform: ${platform}`,
-    `Target: ${triple}`,
-    `Host: ${hostname()}`,
-    `Node: ${process.version}`,
-    `Phase: ${phase}`,
-    `Time: ${new Date().toISOString()}`,
-    "",
-    `Error: ${message}`,
-    "",
-  ];
+  const document: CrashReportDocument = {
+    id,
+    kind: input.kind ?? "compiler",
+    version: COMPILER_VERSION,
+    platform,
+    targetTriple: triple,
+    hostname: hostname(),
+    nodeVersion: process.version,
+    phase,
+    timestamp: new Date().toISOString(),
+    message,
+    ...(stack !== undefined ? { stack } : {}),
+    ...(sourceLocation !== undefined ? { sourcePath: sourceLocation } : {}),
+    ...(input.signal !== undefined ? { signal: input.signal } : {}),
+    ...(input.lastSoniteFrame !== undefined
+      ? { lastSoniteFrame: input.lastSoniteFrame }
+      : {}),
+  };
 
-  if (sourceLocation) {
-    lines.push(`Source: ${sourceLocation}`, "");
-  }
-
-  if (stack) {
-    lines.push("Stack trace:", stack, "");
-  }
-
-  lines.push(
-    "This report was written locally and was not uploaded.",
-    `Please report this issue at: ${ISSUE_TRACKER_URL}`,
-    "",
-  );
-
-  writeFileSync(reportPath, lines.join("\n"), "utf8");
+  writeFileSync(reportPath, `${JSON.stringify(document, null, 2)}\n`, "utf8");
 
   const userMessage = [
     "Sonite compiler encountered an internal error.",
     "",
-    `Compiler version: ${COMPILER_VERSION}`,
-    `Platform: ${platform}`,
-    `Target: ${triple}`,
+    "This is likely a compiler bug.",
     "",
-    `A crash report was written to:`,
+    `Version: ${COMPILER_VERSION}`,
+    `Platform: ${platform}`,
+    `Compiler commit: (local)`,
+    "",
+    "Crash report:",
     reportPath,
     "",
-    `Please report this issue at:`,
-    ISSUE_TRACKER_URL,
+    `Please report this issue at: ${ISSUE_TRACKER_URL}`,
   ].join("\n");
 
-  return { reportPath, userMessage };
+  return { reportPath, userMessage, document };
 }
 
 /** Handle an ICE: write report, print user message, return exit code 1. */
@@ -139,6 +170,7 @@ export function reportInternalError(
       : InternalError.fromUnknown(error, options.phase ?? "compiler");
   const { userMessage } = writeCrashReport({
     error: ice,
+    kind: "compiler",
     ...(options.sourcePath !== undefined
       ? { sourcePath: options.sourcePath }
       : {}),
@@ -146,4 +178,97 @@ export function reportInternalError(
   });
   console.error(userMessage);
   return 1;
+}
+
+export function listCrashReports(): CrashReportDocument[] {
+  const dir = getCrashesDir();
+  if (!existsSync(dir)) {
+    return [];
+  }
+  const docs: CrashReportDocument[] = [];
+  for (const name of readdirSync(dir)) {
+    if (!name.endsWith(".json") && !name.endsWith(".txt")) {
+      continue;
+    }
+    const full = join(dir, name);
+    try {
+      if (name.endsWith(".json")) {
+        const parsed = JSON.parse(readFileSync(full, "utf8")) as CrashReportDocument;
+        docs.push(parsed);
+      } else {
+        docs.push({
+          id: name.replace(/\.txt$/, ""),
+          kind: "compiler",
+          version: COMPILER_VERSION,
+          platform: "unknown",
+          targetTriple: "unknown",
+          hostname: "",
+          nodeVersion: "",
+          phase: "compiler",
+          timestamp: statSync(full).mtime.toISOString(),
+          message: readFileSync(full, "utf8").split("\n")[0] ?? name,
+        });
+      }
+    } catch {
+      // skip corrupt reports
+    }
+  }
+  return docs.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+}
+
+export function showCrashReport(id: string): CrashReportDocument | null {
+  const dir = getCrashesDir();
+  if (!existsSync(dir)) {
+    return null;
+  }
+  const jsonPath = join(dir, `crash-${id}.json`);
+  if (existsSync(jsonPath)) {
+    return JSON.parse(readFileSync(jsonPath, "utf8")) as CrashReportDocument;
+  }
+  for (const name of readdirSync(dir)) {
+    if (name.includes(id)) {
+      const full = join(dir, name);
+      if (name.endsWith(".json")) {
+        return JSON.parse(readFileSync(full, "utf8")) as CrashReportDocument;
+      }
+      return {
+        id,
+        kind: "compiler",
+        version: COMPILER_VERSION,
+        platform: "unknown",
+        targetTriple: "unknown",
+        hostname: "",
+        nodeVersion: "",
+        phase: "compiler",
+        timestamp: statSync(full).mtime.toISOString(),
+        message: readFileSync(full, "utf8"),
+      };
+    }
+  }
+  return null;
+}
+
+export function cleanCrashReports(olderThanDays?: number): number {
+  const dir = getCrashesDir();
+  if (!existsSync(dir)) {
+    return 0;
+  }
+  const cutoff =
+    olderThanDays !== undefined
+      ? Date.now() - olderThanDays * 24 * 60 * 60 * 1000
+      : undefined;
+  let removed = 0;
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    const st = statSync(full);
+    if (!st.isFile()) {
+      continue;
+    }
+    if (cutoff !== undefined && st.mtimeMs > cutoff) {
+      continue;
+    }
+    rmSync(full);
+    removed += 1;
+  }
+  return removed;
 }

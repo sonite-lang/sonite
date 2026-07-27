@@ -63,6 +63,7 @@ export function runInit(options: InitOptions): number {
   mkdirSync(srcDir, { recursive: true });
   writeFileSync(manifestPath, manifest, "utf8");
   writeFileSync(mainPath, DEFAULT_MAIN, "utf8");
+  writeLaunchJson(dir, options.force);
   ensureLockfile(dir);
   if (!existsSync(gitignorePath) || options.force) {
     writeFileSync(gitignorePath, DEFAULT_GITIGNORE, "utf8");
@@ -171,6 +172,30 @@ function buildManifest(answers: InitAnswers): string {
   lines.push(`outdir = ${tomlString(HARDCODED_OUTDIR)}`);
   lines.push("");
   return lines.join("\n");
+}
+
+function writeLaunchJson(dir: string, force: boolean): void {
+  const vscodeDir = join(dir, ".vscode");
+  const launchPath = join(vscodeDir, "launch.json");
+  if (!force && existsSync(launchPath)) {
+    return;
+  }
+  mkdirSync(vscodeDir, { recursive: true });
+  const launch = {
+    version: "0.2.0",
+    configurations: [
+      {
+        type: "sonite",
+        request: "launch",
+        name: "Launch Sonite",
+        program: "${workspaceFolder}/src/main.sn",
+        cwd: "${workspaceFolder}",
+        profile: "debug",
+        buildBeforeLaunch: true,
+      },
+    ],
+  };
+  writeFileSync(launchPath, `${JSON.stringify(launch, null, 2)}\n`, "utf8");
 }
 
 function tomlString(value: string): string {

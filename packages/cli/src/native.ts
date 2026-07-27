@@ -32,6 +32,7 @@ export interface CompileSourceOptions {
   /** When true (default), emit LLVM debug metadata. Disabled for release builds. */
   readonly debugInfo?: boolean;
   readonly release?: boolean;
+  readonly sourceRoot?: string;
 }
 
 export function compileSourceFile(
@@ -51,6 +52,7 @@ export function compileSourceFile(
     result = compileFile(absoluteInput, {
       ...(options.warningsAsErrors ? { warningsAsErrors: true } : {}),
       debugInfo,
+      sourceRoot: options.sourceRoot ?? dirname(absoluteInput),
     });
   } catch (error) {
     reportInternalError(error, {
@@ -90,6 +92,7 @@ export interface LinkOptions {
   readonly release?: boolean;
   readonly optLevel?: OptLevel;
   readonly triple?: string;
+  readonly debugInfo?: boolean;
   /** Project-level native libraries from `[native]`. */
   readonly nativeLink?: import("./native-deps.js").NativeLinkSpec;
 }
@@ -136,9 +139,13 @@ export async function linkNative(options: LinkOptions): Promise<number> {
     const targetConfig: {
       optLevel: OptLevel;
       triple?: string;
+      framePointers?: boolean;
     } = { optLevel };
     if (options.triple) {
       targetConfig.triple = options.triple;
+    }
+    if (options.debugInfo !== false && options.release !== true) {
+      targetConfig.framePointers = true;
     }
     backend.target(targetConfig);
     backend.verify();

@@ -286,6 +286,23 @@ async function main() {
   rmSync(preLib, { recursive: true, force: true });
   cpSync(pkgLib, preLib, { recursive: true });
 
+  const sdkBin = join(sdkRoot, "bin");
+  const pkgBin = join(pkgDir, "bin");
+  if (existsSync(sdkBin)) {
+    mkdirSync(pkgBin, { recursive: true });
+    const lldbNames =
+      process.platform === "win32"
+        ? ["lldb.exe", "lldb-dap.exe"]
+        : ["lldb", "lldb-dap"];
+    for (const name of lldbNames) {
+      const src = join(sdkBin, name);
+      if (existsSync(src)) {
+        copyFileSync(src, join(pkgBin, name));
+        console.error(`info: bundled ${name}`);
+      }
+    }
+  }
+
   writeFileSync(
     join(pkgDir, "BUILD_INFO.json"),
     JSON.stringify(

@@ -31,11 +31,12 @@ describe("crash reporting", () => {
     });
 
     const body = readFileSync(reportPath, "utf8");
-    expect(body).toContain("Compiler version:");
-    expect(body).toContain("Phase: codegen");
-    expect(body).toContain("Error: boom in emit");
-    expect(body).toContain("Source: /tmp/example.sn");
-    expect(body).toContain("was not uploaded");
+    const doc = JSON.parse(body) as { kind: string; phase: string; message: string; sourcePath?: string };
+    expect(doc.kind).toBe("compiler");
+    expect(doc.phase).toBe("codegen");
+    expect(doc.message).toBe("boom in emit");
+    expect(doc.sourcePath).toBe("/tmp/example.sn");
+    expect(reportPath).toMatch(/crash-.*\.json$/);
     expect(userMessage).toContain(reportPath);
     expect(userMessage).toContain("internal error");
   });

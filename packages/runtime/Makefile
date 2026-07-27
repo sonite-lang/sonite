@@ -50,6 +50,7 @@ LIBRARY := $(DIST_DIR)/libsn_runtime.a
 SMOKE_BIN := $(DIST_DIR)/runtime_smoke
 ASYNC_SMOKE_BIN := $(DIST_DIR)/async_smoke
 TLS_SMOKE_BIN := $(DIST_DIR)/tls_smoke
+DEBUG_SMOKE_BIN := $(DIST_DIR)/debug_smoke
 NET_EXTRAS_SMOKE_BIN := $(DIST_DIR)/net_extras_smoke
 
 .PHONY: all clean test openssl
@@ -79,14 +80,18 @@ $(ASYNC_SMOKE_BIN): $(TEST_DIR)/async_smoke.c $(LIBRARY)
 $(TLS_SMOKE_BIN): $(TEST_DIR)/tls_smoke.c $(LIBRARY)
 	$(CC) $(CFLAGS) $< $(LIBRARY) -lm -lpthread $(OPENSSL_LIBS) -o $@
 
+$(DEBUG_SMOKE_BIN): $(TEST_DIR)/debug_smoke.c $(LIBRARY)
+	$(CC) $(CFLAGS) $< $(LIBRARY) -lm -lpthread $(OPENSSL_LIBS) -o $@
+
 $(NET_EXTRAS_SMOKE_BIN): $(TEST_DIR)/net_extras_smoke.c $(LIBRARY)
 	$(CC) $(CFLAGS) $< $(LIBRARY) -lm -lpthread $(OPENSSL_LIBS) -o $@
 
-test: $(SMOKE_BIN) $(ASYNC_SMOKE_BIN) $(TLS_SMOKE_BIN) $(NET_EXTRAS_SMOKE_BIN)
+test: $(SMOKE_BIN) $(ASYNC_SMOKE_BIN) $(TLS_SMOKE_BIN) $(NET_EXTRAS_SMOKE_BIN) $(DEBUG_SMOKE_BIN)
 	./$(SMOKE_BIN)
 	./$(ASYNC_SMOKE_BIN)
 	./$(TLS_SMOKE_BIN)
 	./$(NET_EXTRAS_SMOKE_BIN)
+	./$(DEBUG_SMOKE_BIN)
 
 clean:
 	rm -rf $(DIST_DIR)

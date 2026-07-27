@@ -14,6 +14,7 @@ void sn_runtime_init(int32_t argc, char **argv) {
   g_argv = argv;
   SetConsoleOutputCP(CP_UTF8);
   SetConsoleCP(CP_UTF8);
+  sn_debug_install_crash_handlers();
 }
 
 void *sn_process_args(void) {

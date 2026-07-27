@@ -27,7 +27,8 @@
   "categories": [
     "Programming Languages",
     "Formatters",
-    "Linters"
+    "Linters",
+    "Debuggers"
   ],
   "keywords": [
     "sn",
@@ -75,6 +76,79 @@
         "scopeName": "source.sn",
         "path": "./syntaxes/sn.tmLanguage.json"
       }
+    ],
+    "debuggers": [
+      {
+        "type": "sonite",
+        "label": "Sonite",
+        "languages": ["sn"],
+        "configurationAttributes": {
+          "launch": {
+            "required": ["program"],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Path to the Sonite entry .sn file",
+                "default": "${workspaceFolder}/src/main.sn"
+              },
+              "cwd": {
+                "type": "string",
+                "default": "${workspaceFolder}"
+              },
+              "args": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "profile": {
+                "type": "string",
+                "enum": ["debug", "release"],
+                "default": "debug"
+              },
+              "buildBeforeLaunch": {
+                "type": "boolean",
+                "default": true
+              },
+              "showNativeFrames": {
+                "type": "boolean",
+                "default": false,
+                "description": "Show runtime and native frames in the call stack"
+              }
+            }
+          },
+          "attach": {
+            "required": ["processId"],
+            "properties": {
+              "processId": {
+                "type": "number"
+              },
+              "showNativeFrames": {
+                "type": "boolean",
+                "default": false
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "sonite",
+            "request": "launch",
+            "name": "Launch Sonite",
+            "program": "${workspaceFolder}/src/main.sn"
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Sonite: Launch",
+            "description": "Build and debug a Sonite program",
+            "body": {
+              "type": "sonite",
+              "request": "launch",
+              "name": "Launch Sonite",
+              "program": "^\"\\${workspaceFolder}/src/main.sn\""
+            }
+          }
+        ]
+      }
     ]
   },
   "scripts": {
@@ -92,6 +166,7 @@
     "@types/node": "^22.15.30",
     "@types/vscode": "^1.85.0",
     "@vscode/vsce": "^3.9.2",
+    "@sonite/debug-adapter": "workspace:*",
     "esbuild": "^0.25.12",
     "typescript": "^5.8.3",
     "vscode-oniguruma": "^2.0.1",

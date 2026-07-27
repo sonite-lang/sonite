@@ -67,3 +67,10 @@ Currently supported features:
 `createMap()` is a builtin that allocates an empty string-keyed map (for index-signature types).
 
 Supported native targets: Linux x64/ARM64, macOS x64/ARM64, Windows x64 (Windows ARM64 deferred).
+
+## Debugging & diagnostics
+
+- Debug/release build profiles (`sn build`, `sn build --release`) with DWARF debug metadata
+- Runtime stack traces, structured panics, and local crash reports (`sn crash list/show/clean`)
+- Sonite debug adapter (DAP) with LLDB backend and VS Code integration (`type: "sonite`)
+- See [docs/debugging.md](docs/debugging.md)

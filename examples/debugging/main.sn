@@ -1,0 +1,4 @@
+function main(): void {
+  const message = "Set a breakpoint on the next line"
+  print(message)
+}

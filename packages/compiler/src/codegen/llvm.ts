@@ -43,11 +43,21 @@ import {
   attachDbgToDefine,
   DebugInfoBuilder,
 } from "./debug-info.js";
+import {
+  buildDebugFrameEmit,
+  DEBUG_RUNTIME_DECLARES,
+  debugTypeName,
+  emitBoundsCheck,
+  emitDebugPopLine,
+  emitDebugPushLines,
+  type DebugFrameEmit,
+} from "./debug-runtime.js";
 import { valueTypeToAnnotation } from "../generics/value-type.js";
 import { DiagnosticCollector, type SourceSpan } from "../diagnostics/diagnostic.js";
 import { buildExportTables } from "../modules/exports.js";
 import { mangleSymbol } from "../modules/mangle.js";
 import type { ResolvedModule } from "../modules/resolve.js";
+import { dirname } from "node:path";
 import {
   BUILTIN_ERROR_LOCAL_NAME,
   BUILTIN_ERROR_MANGLED,
@@ -491,10 +501,26 @@ export class LlvmCodegen {
   /** Extern symbols that need `declare` in the module. */
   private readonly externDeclares = new Set<string>();
   private needsSnStrExtras = false;
+  private needsSnDebug = false;
+  private debugSourceRoot: string | undefined;
+  private isOptimizedBuild = false;
+  private currentDebugFrame: DebugFrameEmit | null = null;
 
-  constructor(options: { readonly debugInfo?: boolean } = {}) {
+  constructor(
+    options: {
+      readonly debugInfo?: boolean;
+      readonly sourceRoot?: string;
+      readonly isOptimized?: boolean;
+      readonly emitCodeView?: boolean;
+    } = {},
+  ) {
     this.emitDebugInfo = options.debugInfo !== false;
+    this.debugSourceRoot = options.sourceRoot;
+    this.isOptimizedBuild = options.isOptimized === true;
+    this.emitCodeView = options.emitCodeView === true;
   }
+
+  private readonly emitCodeView: boolean;
 
   emit(program: Program): string {
     return this.emitModules([
@@ -518,9 +544,19 @@ export class LlvmCodegen {
     this.stringCounter = 0;
     this.tempCounter = 0;
     this.labelCounter = 0;
-    this.debugBuilder = this.emitDebugInfo ? new DebugInfoBuilder() : null;
+    this.debugBuilder = this.emitDebugInfo
+      ? new DebugInfoBuilder({
+          ...(this.debugSourceRoot ? { sourceRoot: this.debugSourceRoot } : {}),
+          ...(this.isOptimizedBuild ? { isOptimized: true } : {}),
+          ...(this.emitCodeView ? { emitCodeView: true } : {}),
+        })
+      : null;
     this.currentDbgScope = null;
-    this.currentSourcePath = modules.find((m) => m.isEntry)?.path ?? modules[0]?.path ?? "sonite";
+    const entry = modules.find((m) => m.isEntry) ?? modules[0];
+    this.currentSourcePath = entry?.path ?? "sonite";
+    if (!this.debugSourceRoot && entry?.path && entry.path !== "<source>") {
+      this.debugSourceRoot = dirname(entry.path.replace(/\\/g, "/"));
+    }
     if (this.debugBuilder) {
       this.debugBuilder.ensureCompileUnit(this.currentSourcePath);
     }
@@ -3110,6 +3146,10 @@ export class LlvmCodegen {
 
   /** Emit `ret` after restoring this function's shadow-stack roots. */
   private emitFunctionRet(lines: string[], retInstruction: string): void {
+    if (this.currentDebugFrame) {
+      emitDebugPopLine(lines);
+      this.currentDebugFrame = null;
+    }
     this.emitGcRootPop(lines);
     lines.push(retInstruction);
   }
@@ -3665,6 +3705,11 @@ export class LlvmCodegen {
     if (this.needsAbort) {
       declares.push("declare void @abort() noreturn nounwind");
     }
+    if (this.needsSnDebug) {
+      for (const decl of DEBUG_RUNTIME_DECLARES) {
+        declares.push(decl);
+      }
+    }
     if (this.needsAsync) {
       declares.push("declare void @sn_async_init() nounwind");
       declares.push("declare void @sn_async_shutdown() nounwind");
@@ -4086,10 +4131,15 @@ export class LlvmCodegen {
     const dbg = this.debugBuilder;
     let fnDbgScope: number | null = null;
     if (dbg) {
+      const retName =
+        sig?.returnType === "void" || sig?.returnType === undefined
+          ? "void"
+          : debugTypeName(sig.returnType);
       fnDbgScope = dbg.subprogram(
         fn.name.name,
         this.currentSourcePath,
         fn.name.span.start.line,
+        { returnTypeName: retName },
       );
       header = attachDbgToDefine(header, fnDbgScope);
       this.currentDbgScope = fnDbgScope;
@@ -4097,6 +4147,16 @@ export class LlvmCodegen {
 
     lines.push(header);
     lines.push("entry:");
+
+    this.needsSnDebug = true;
+    this.currentDebugFrame = buildDebugFrameEmit(
+      this.currentSourcePath,
+      this.debugSourceRoot,
+      fn.name.name,
+      fn.name.span,
+      (v) => this.internString(v),
+    );
+    emitDebugPushLines(lines, this.currentDebugFrame);
 
     if (isMain) {
       // Non-entry module inits first (moduleInitFns already ordered that way).
@@ -4241,7 +4301,19 @@ export class LlvmCodegen {
     this.currentReturnType = declaredRet;
 
     const entryLines: string[] = [];
-    entryLines.push(`define void @${bodyName}(ptr %frame) {`);
+    let bodyHeader = `define void @${bodyName}(ptr %frame) {`;
+    const dbg = this.debugBuilder;
+    if (dbg) {
+      const asyncDbgScope = dbg.subprogram(
+        fn.name.name,
+        this.currentSourcePath,
+        fn.name.span.start.line,
+        { linkageName: bodyName, returnTypeName: "void" },
+      );
+      bodyHeader = attachDbgToDefine(bodyHeader, asyncDbgScope);
+      this.currentDbgScope = asyncDbgScope;
+    }
+    entryLines.push(bodyHeader);
     entryLines.push("entry:");
 
     // result Future*
@@ -4321,13 +4393,24 @@ export class LlvmCodegen {
     // Emit the body into its own block stream, beginning at state 0.
     const bodyLines: string[] = [];
     bodyLines.push("state.0:");
+    this.needsSnDebug = true;
+    this.currentDebugFrame = buildDebugFrameEmit(
+      this.currentSourcePath,
+      this.debugSourceRoot,
+      fn.name.name,
+      fn.name.span,
+      (v) => this.internString(v),
+    );
+    emitDebugPushLines(bodyLines, this.currentDebugFrame);
     this.emitAsyncRootEhEnter(bodyLines);
     let terminated = false;
     for (const stmt of fn.body) {
       if (terminated) {
         break;
       }
+      const before = bodyLines.length;
       terminated = this.emitStatement(stmt, bodyLines);
+      this.attachStatementDebug(bodyLines, before, stmt.span);
     }
     if (!terminated) {
       this.emitAsyncEhPopAll(bodyLines);
@@ -4370,6 +4453,8 @@ export class LlvmCodegen {
     this.boxedNames = new Set();
     this.thisPtr = null;
     this.thisType = null;
+    this.currentDbgScope = null;
+    this.currentDebugFrame = null;
     this.endGcFunctionScope(bodyGc);
 
     // --- start stub ---
@@ -4569,7 +4654,21 @@ export class LlvmCodegen {
     }
     const llvmType = toLlvmType(type);
     const ptr = `%v.${param.name.name}`;
-    lines.push(`  ${ptr} = alloca ${llvmType}`);
+    let allocaLine = `  ${ptr} = alloca ${llvmType}`;
+    const dbg = this.debugBuilder;
+    const scope = this.currentDbgScope;
+    if (dbg && scope !== null) {
+      const varId = dbg.localVariable(
+        param.name.name,
+        scope,
+        this.currentSourcePath,
+        param.span.start.line,
+        debugTypeName(type),
+        { isParameter: true },
+      );
+      allocaLine = dbg.attachLocalDbg(allocaLine, varId);
+    }
+    lines.push(allocaLine);
     lines.push(`  store ${llvmType} %arg${index}, ptr ${ptr}`);
     this.locals.set(param.name.name, { ptr, type, boxed: false });
     this.registerRootsForStorage(ptr, type, lines);
@@ -4622,12 +4721,16 @@ export class LlvmCodegen {
         return this.emitTryStatement(stmt, lines);
       case "UnsafeBlock": {
         let terminated = false;
-        for (const inner of stmt.body) {
-          if (terminated) {
-            break;
+        this.withLexicalScope(stmt.span, () => {
+          for (const inner of stmt.body) {
+            if (terminated) {
+              break;
+            }
+            const before = lines.length;
+            terminated = this.emitStatement(inner, lines);
+            this.attachStatementDebug(lines, before, inner.span);
           }
-          terminated = this.emitStatement(inner, lines);
-        }
+        });
         return terminated;
       }
     }
@@ -5096,7 +5199,13 @@ export class LlvmCodegen {
 
   private emitThrowStatement(stmt: ThrowStatement, lines: string[]): boolean {
     this.needsSnException = true;
+    this.needsSnDebug = true;
     const value = this.emitExpression(stmt.expression, lines);
+    const stack = this.nextTemp();
+    lines.push(`  ${stack} = call ptr @sn_error_capture_stack_text(i32 noundef 0)`);
+    lines.push(
+      `  call void @sn_error_attach_stack(ptr noundef ${value.llvm}, ptr noundef ${stack})`,
+    );
     lines.push(`  call void @sn_throw(ptr noundef ${value.llvm})`);
     lines.push("  unreachable");
     return true;
@@ -5187,12 +5296,16 @@ export class LlvmCodegen {
     for (let i = 0; i < stmt.cases.length; i += 1) {
       lines.push(`${caseBodyLabels[i]}:`);
       let terminated = false;
-      for (const s of stmt.cases[i]!.body) {
-        if (terminated) {
-          break;
+      this.withLexicalScope(stmt.cases[i]!.span, () => {
+        for (const s of stmt.cases[i]!.body) {
+          if (terminated) {
+            break;
+          }
+          const before = lines.length;
+          terminated = this.emitStatement(s, lines);
+          this.attachStatementDebug(lines, before, s.span);
         }
-        terminated = this.emitStatement(s, lines);
-      }
+      });
       if (!terminated) {
         const nextLabel =
           i + 1 < stmt.cases.length ? caseBodyLabels[i + 1]! : exitLabel;
@@ -5256,12 +5369,16 @@ export class LlvmCodegen {
       breakLabel: exitLabel,
     });
     let terminated = false;
-    for (const s of stmt.body) {
-      if (terminated) {
-        break;
+    this.withLexicalScope(stmt.span, () => {
+      for (const s of stmt.body) {
+        if (terminated) {
+          break;
+        }
+        const before = lines.length;
+        terminated = this.emitStatement(s, lines);
+        this.attachStatementDebug(lines, before, s.span);
       }
-      terminated = this.emitStatement(s, lines);
-    }
+    });
     this.controlStack.pop();
     if (!terminated) {
       lines.push(`  br label %${condLabel}`);
@@ -5302,12 +5419,16 @@ export class LlvmCodegen {
       breakLabel: exitLabel,
     });
     let terminated = false;
-    for (const s of stmt.body) {
-      if (terminated) {
-        break;
+    this.withLexicalScope(stmt.span, () => {
+      for (const s of stmt.body) {
+        if (terminated) {
+          break;
+        }
+        const before = lines.length;
+        terminated = this.emitStatement(s, lines);
+        this.attachStatementDebug(lines, before, s.span);
       }
-      terminated = this.emitStatement(s, lines);
-    }
+    });
     this.controlStack.pop();
     if (!terminated) {
       lines.push(`  br label %${latchLabel}`);
@@ -5524,7 +5645,20 @@ export class LlvmCodegen {
     }
 
     const ptr = `%v.${name}`;
-    lines.push(`  ${ptr} = alloca ${llvmType}`);
+    let allocaLine = `  ${ptr} = alloca ${llvmType}`;
+    const dbg = this.debugBuilder;
+    const scope = this.currentDbgScope;
+    if (dbg && scope !== null) {
+      const varId = dbg.localVariable(
+        name,
+        scope,
+        this.currentSourcePath,
+        stmt.span.start.line,
+        debugTypeName(type),
+      );
+      allocaLine = dbg.attachLocalDbg(allocaLine, varId);
+    }
+    lines.push(allocaLine);
     this.locals.set(name, { ptr, type, boxed: false });
     this.registerRootsForStorage(ptr, type, lines);
 
@@ -7535,7 +7669,23 @@ export class LlvmCodegen {
     indexI32: string,
     elementType: ValueType,
     lines: string[],
+    span?: SourceSpan,
   ): EmittedValue {
+    if (span) {
+      this.needsSnDebug = true;
+      const len = this.emitArrayLength(header, lines);
+      emitBoundsCheck(
+        lines,
+        indexI32,
+        len,
+        span,
+        this.currentSourcePath,
+        this.debugSourceRoot,
+        (v) => this.internString(v),
+        (p) => this.nextLabel(p),
+        () => this.nextTemp(),
+      );
+    }
     const slot = this.emitArrayElementPtr(header, indexI32, elementType, lines);
     const loaded = this.nextTemp();
     lines.push(`  ${loaded} = load ${toLlvmType(elementType)}, ptr ${slot}`);
@@ -7586,7 +7736,13 @@ export class LlvmCodegen {
     }
     const index = this.emitExpression(expr.index, lines);
     const indexI32 = this.asI32Index(index, lines);
-    return this.emitArrayIndexLoad(obj.llvm, indexI32, obj.type.element, lines);
+    return this.emitArrayIndexLoad(
+      obj.llvm,
+      indexI32,
+      obj.type.element,
+      lines,
+      expr.span,
+    );
   }
 
   private emitMemberValueWithObject(

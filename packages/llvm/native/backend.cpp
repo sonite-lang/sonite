@@ -239,6 +239,13 @@ Napi::Value BackendTarget(const Napi::CallbackInfo &info) {
       config.Has("codeModel") && config.Get("codeModel").IsString()
           ? config.Get("codeModel").As<Napi::String>().Utf8Value()
           : "default";
+  if (framePointers) {
+    if (features.empty()) {
+      features = "+frame-pointer";
+    } else if (features.find("frame-pointer") == std::string::npos) {
+      features += ",+frame-pointer";
+    }
+  }
 
   if (triple.empty()) {
     char *defaultTriple = LLVMGetDefaultTargetTriple();

@@ -7,7 +7,7 @@ import { compile, compileFile } from "../src/index.js";
 /**
  * Manual LLDB smoke (not run in CI):
  *   sn build
- *   lldb --batch -o 'b main' -o 'run' -o 'frame info' -o 'quit' .sonite/bin/<name>
+ *   lldb --batch -o 'b main' -o 'run' -o 'frame info' -o 'quit' build/debug/<name>
  *
  * Optional object-level check when llvm-dwarfdump is on PATH:
  *   sn build --emit-ir && llc/backend emit + llvm-dwarfdump --debug-line
@@ -82,5 +82,42 @@ describe("LLVM debug metadata", () => {
     );
     expect(result.success).toBe(true);
     expect(result.ir).toContain("!DILexicalBlock");
+  });
+
+  it("emits DILocalVariable for parameters and locals", () => {
+    const result = compile(
+      `function calculate(name: string): void {
+  const count: i32 = 10;
+  print(name);
+  print(count);
+}
+function main(): void {
+  calculate("Ethan");
+}
+`,
+      { fileName: "locals.sn" },
+    );
+    expect(result.success).toBe(true);
+    expect(result.ir).toContain("!DILocalVariable");
+    expect(result.ir).toMatch(/!DILocalVariable\(name: "count"/);
+    expect(result.ir).toMatch(/!DILocalVariable\(name: "name"/);
+    expect(result.ir).toContain("sn_debug_push_frame");
+    expect(result.ir).toContain("sn_debug_pop_frame");
+  });
+
+  it("emits async debug subprogram with user-visible name", () => {
+    const result = compile(
+      `async function fetchUser(): void {
+  print("hi");
+}
+async function main(): void {
+  await fetchUser();
+}
+`,
+      { fileName: "async-debug.sn" },
+    );
+    expect(result.success).toBe(true);
+    expect(result.ir).toMatch(/!DISubprogram\(name: "fetchUser"/);
+    expect(result.ir).toContain("__async__body");
   });
 });

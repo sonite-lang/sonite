@@ -5,11 +5,8 @@
 #include <string.h>
 
 static void callee(void) {
-  char msg[] = "test error";
-  char *error_fields[2];
-  error_fields[0] = NULL;
-  error_fields[1] = msg;
-  sn_throw((void *)error_fields);
+  void *err = sn_error_new("test error");
+  sn_throw(err);
 }
 
 int main(void) {
@@ -21,8 +18,8 @@ int main(void) {
     printf("no catch\n");
   } else {
     void *err = sn_eh_caught_exception();
-    char **fields = (char **)err;
-    printf("caught: %s\n", fields[1]);
+    char **fields = (char **)((char *)err + 16);
+    printf("caught: %s\n", fields[0]);
   }
   sn_eh_pop(frame);
   return 0;

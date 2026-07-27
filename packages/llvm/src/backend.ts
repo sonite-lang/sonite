@@ -16,6 +16,8 @@ export interface TargetConfig {
   readonly relocModel?: RelocModel;
   readonly codeModel?: CodeModel;
   readonly release?: boolean;
+  /** Preserve frame pointers for reliable debugging (debug builds). */
+  readonly framePointers?: boolean;
 }
 
 /**
@@ -55,6 +57,9 @@ export class Backend {
     };
     if (config.triple) {
       payload.triple = config.triple;
+    }
+    if (config.framePointers) {
+      payload.framePointers = "true";
     }
     this.native.backendTarget.call(this.handle, payload);
   }

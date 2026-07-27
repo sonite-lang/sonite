@@ -8,6 +8,7 @@ import {
   type LanguageClientOptions,
   type ServerOptions,
 } from "vscode-languageclient/node";
+import { registerSoniteDebugger } from "./debug.js";
 
 let client: LanguageClient | undefined;
 
@@ -116,6 +117,8 @@ export async function activate(
   );
 
   context.subscriptions.push(client);
+
+  registerSoniteDebugger(context);
 
   try {
     await client.start();

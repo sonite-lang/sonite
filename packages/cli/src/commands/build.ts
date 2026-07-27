@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, resolve, dirname } from "node:path";
 import { compileSourceFile, linkNative } from "../native.js";
 import {
   deployRuntimeLibraries,
@@ -86,6 +86,7 @@ export async function runBuild(options: BuildOptions = {}): Promise<number> {
     ...(options.warningsAsErrors ? { warningsAsErrors: true } : {}),
     debugInfo: profile.debugInfo,
     release: releaseLike,
+    sourceRoot: dirname(project.entryPath),
   });
   if (!compiled) {
     return 1;
@@ -93,6 +94,7 @@ export async function runBuild(options: BuildOptions = {}): Promise<number> {
 
   // Profile-aware default: <outdir>/<profile>/<binary>
   const profileOutdir = join(project.outdirPath, profile.name);
+  mkdirSync(join(profileOutdir, "symbols"), { recursive: true });
   const binaryPath = options.output
     ? resolve(options.output)
     : join(profileOutdir, project.binaryName);
@@ -120,6 +122,7 @@ export async function runBuild(options: BuildOptions = {}): Promise<number> {
     optLevel,
     ...(irPath !== undefined ? { emitIrPath: irPath } : {}),
     release: releaseLike,
+    debugInfo: profile.debugInfo,
   };
 
   const status = await linkNative(linkOpts);

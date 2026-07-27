@@ -1,0 +1,30 @@
+{
+  "name": "@sonite/debug-adapter",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Sonite Debug Adapter Protocol server",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "sonite-debug-adapter": "./dist/main.js"
+  },
+  "main": "./dist/main.js",
+  "exports": {
+    ".": "./dist/main.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@vscode/debugadapter": "^1.68.0",
+    "@vscode/debugprotocol": "^1.68.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.7"
+  }
+}

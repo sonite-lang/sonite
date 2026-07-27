@@ -70,30 +70,73 @@ void sn_eh_clear_exception(void) {
 }
 
 void *sn_error_new(const char *message) {
-  /* Layout must match builtin Error: ObjectHeader (16) + message ptr. */
-  void *err = sn_alloc(16 + (int64_t)sizeof(void *));
-  memset(err, 0, 16 + sizeof(void *));
+  /* Layout: ObjectHeader (16) + message + stackTrace + cause. */
+  void *err = sn_alloc(16 + (int64_t)(sizeof(void *) * 3));
+  memset(err, 0, 16 + sizeof(void *) * 3);
   ((SnObjectHeader *)err)->type_id = SN_TYPEID_CLASS_BASE;
   ((SnObjectHeader *)err)->vtable = NULL;
   const char *msg = message != NULL ? message : "";
-  char *m = sn_str_concat(msg, "");
-  *((char **)((char *)err + 16)) = m;
+  char **fields = (char **)((char *)err + 16);
+  fields[0] = sn_str_concat(msg, "");
+  fields[1] = sn_str_concat("", "");
+  fields[2] = NULL;
   return err;
 }
 
-void sn_uncaught_exception(void *error) {
+static void print_error_message(void *error) {
   char *message = "";
+  char *stack = NULL;
   if (error != NULL) {
-    void **fields = (void **)error;
-    if (fields[1] != NULL) {
-      message = (char *)fields[1];
+    char **fields = (char **)((char *)error + 16);
+    if (fields[0] != NULL) {
+      message = fields[0];
+    }
+    if (fields[1] != NULL && fields[1][0] != '\0') {
+      stack = fields[1];
     }
   }
   fprintf(stderr, "Uncaught Error: %s\n", message);
+  if (stack != NULL) {
+    fprintf(stderr, "\nStack trace:\n%s", stack);
+    if (stack[strlen(stack) - 1] != '\n') {
+      fprintf(stderr, "\n");
+    }
+  } else {
+    fprintf(stderr, "\nStack trace:\n");
+    sn_debug_print_stack(stderr, NULL, 0);
+  }
+  if (error != NULL) {
+    void *cause = sn_error_get_cause(error);
+    int depth = 0;
+    while (cause != NULL && depth < 8) {
+      char **cause_fields = (char **)((char *)cause + 16);
+      fprintf(stderr, "\nCaused by: %s\n",
+              cause_fields[0] != NULL ? cause_fields[0] : "Error");
+      if (cause_fields[1] != NULL && cause_fields[1][0] != '\0') {
+        fprintf(stderr, "%s", cause_fields[1]);
+        if (cause_fields[1][strlen(cause_fields[1]) - 1] != '\n') {
+          fprintf(stderr, "\n");
+        }
+      }
+      cause = sn_error_get_cause(cause);
+      depth += 1;
+    }
+  }
+}
+
+void sn_uncaught_exception(void *error) {
+  print_error_message(error);
 }
 
 void sn_throw(void *error) {
   ensure_exception_root();
+  if (error != NULL) {
+    char *stack = sn_error_get_stack_trace(error);
+    if (stack == NULL || stack[0] == '\0') {
+      char *captured = sn_error_capture_stack_text(0);
+      sn_error_attach_stack(error, captured);
+    }
+  }
   sn_eh_current_exception = error;
   struct SnEhFrame *f = sn_eh_stack;
   while (f != NULL) {

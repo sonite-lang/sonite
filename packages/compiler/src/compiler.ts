@@ -124,7 +124,19 @@ function discoverPreludePaths(): readonly string[] {
   ];
 }
 
-setStdRootProvider(discoverStdRoot);
+function llvmCodegenOptions(
+  options: CompileOptions | CompileFileOptions,
+  fallbackSourceRoot?: string,
+): ConstructorParameters<typeof LlvmCodegen>[0] {
+  const root = options.sourceRoot ?? fallbackSourceRoot;
+  return {
+    debugInfo: options.debugInfo !== false,
+    ...(root !== undefined ? { sourceRoot: root } : {}),
+    ...(options.isOptimized === true ? { isOptimized: true } : {}),
+    ...(options.emitCodeView === true ? { emitCodeView: true } : {}),
+  };
+}
+
 setPreludePathsProvider(discoverPreludePaths);
 
 export interface CompileOptions {
@@ -134,6 +146,9 @@ export interface CompileOptions {
   readonly warningsAsErrors?: boolean;
   /** Emit LLVM debug metadata (default true). Omit under release builds. */
   readonly debugInfo?: boolean;
+  readonly sourceRoot?: string;
+  readonly isOptimized?: boolean;
+  readonly emitCodeView?: boolean;
 }
 
 export interface CompileResult {
@@ -205,9 +220,9 @@ function compileInner(
     const inst = typecheckModules(modules, diagnostics);
     if (!diagnostics.hasErrors) {
       monoModules = monomorphizeModules(modules, inst.instantiations);
-      const ir = new LlvmCodegen({
-        debugInfo: options.debugInfo !== false,
-      }).emitModules(monoModules, inst.instantiations);
+      const ir = new LlvmCodegen(
+        llvmCodegenOptions(options, fileName === "<source>" ? process.cwd() : dirname(fileName)),
+      ).emitModules(monoModules, inst.instantiations);
       const finalized = finalizeDiagnostics(diagnostics.diagnostics, finalizeOpts(options, fileName === "<source>" ? process.cwd() : fileName,));
       return {
         ast: monoModules.find((m) => m.isEntry)?.ast ?? ast,
@@ -230,9 +245,9 @@ function compileInner(
     };
   }
 
-  const ir = new LlvmCodegen({
-    debugInfo: options.debugInfo !== false,
-  }).emitModules(monoModules);
+  const ir = new LlvmCodegen(
+    llvmCodegenOptions(options, fileName === "<source>" ? process.cwd() : fileName),
+  ).emitModules(monoModules);
   const finalized = finalizeDiagnostics(diagnostics.diagnostics, finalizeOpts(options, fileName === "<source>" ? process.cwd() : fileName,));
   return {
     ast: monoModules.find((m) => m.isEntry)?.ast ?? ast,
@@ -269,6 +284,9 @@ export interface CompileFileOptions {
   readonly warningsAsErrors?: boolean;
   /** Emit LLVM debug metadata (default true). Omit under release builds. */
   readonly debugInfo?: boolean;
+  readonly sourceRoot?: string;
+  readonly isOptimized?: boolean;
+  readonly emitCodeView?: boolean;
 }
 
 /**
@@ -342,9 +360,9 @@ function compileFileInner(
     };
   }
 
-  const ir = new LlvmCodegen({
-    debugInfo: options.debugInfo !== false,
-  }).emitModules(monoModules, inst);
+  const ir = new LlvmCodegen(
+    llvmCodegenOptions(options, absoluteEntry),
+  ).emitModules(monoModules, inst);
   const finalized = finalizeDiagnostics(diagnostics.diagnostics, finalizeOpts(options, absoluteEntry,));
   return {
     ast: monoModules.find((m) => m.isEntry)?.ast ?? entry.ast,

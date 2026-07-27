@@ -4,6 +4,7 @@
 #include <setjmp.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,6 +31,33 @@ void sn_eh_clear_exception(void);
 void sn_uncaught_exception(void *error);
 /** Allocate a builtin Error with the given message (UTF-8 C string). */
 void *sn_error_new(const char *message);
+void sn_error_attach_stack(void *error, const char *stack_text);
+char *sn_error_capture_stack_text(int32_t skip);
+void sn_error_set_cause(void *error, void *cause);
+void *sn_error_get_cause(void *error);
+char *sn_error_get_stack_trace(void *error);
+
+/* Runtime debug frame stack and panics. */
+void sn_debug_push_frame(const char *file, int line, int column, const char *function);
+void sn_debug_pop_frame(void);
+int32_t sn_debug_frame_depth(void);
+void sn_debug_capture_stack(char *out, int64_t out_cap, int32_t skip);
+void sn_debug_print_stack(FILE *out, const char *header, int32_t skip);
+typedef struct SnDebugFrame {
+  const char *file;
+  int line;
+  int column;
+  const char *function;
+} SnDebugFrame;
+const SnDebugFrame *sn_debug_top_frame(void);
+void sn_panic(const char *kind, const char *message, const char *file, int line, int column);
+void sn_panic_bounds(const char *file, int line, int column, int64_t index, int64_t length);
+void sn_debug_install_crash_handlers(void);
+int64_t sn_debug_task_register(const char *function, const char *file, int line);
+void sn_debug_task_set_state(int64_t id, int32_t state, const char *suspend_file,
+                             int suspend_line, const char *await_desc);
+int32_t sn_debug_task_count(void);
+void sn_debug_print_async_stack(FILE *out);
 
 /* Shared header on every class instance. Must match %ObjectHeader in llvm.ts.
  * type_id indexes TypeInfo (class IDs start at SN_TYPEID_CLASS_BASE).

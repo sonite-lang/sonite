@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { runAudit } from "./commands/audit.js";
 import { runBuild } from "./commands/build.js";
 import { runClean } from "./commands/clean.js";
+import { runCrashClean, runCrashList, runCrashShow } from "./commands/crash.js";
 import { runCompile } from "./commands/compile.js";
 import { runCacheClean } from "./commands/cache.js";
 import { runAdd, runInstall, runRemove, runUpdate } from "./commands/deps.js";
@@ -134,6 +135,42 @@ program
   .description("Remove generated build artifacts (not dependencies)")
   .action(() => {
     process.exitCode = runClean();
+  });
+
+const crash = program
+  .command("crash")
+  .description("Inspect local Sonite crash reports (~/.sonite/crashes)");
+
+crash
+  .command("list")
+  .description("List local crash reports")
+  .action(() => {
+    process.exitCode = runCrashList();
+  });
+
+crash
+  .command("show")
+  .description("Show a crash report by id")
+  .argument("<id>", "crash report id or prefix")
+  .action((id: string) => {
+    process.exitCode = runCrashShow(id);
+  });
+
+crash
+  .command("clean")
+  .description("Remove crash reports")
+  .option("--older-than <days>", "only remove reports older than N days", (v) =>
+    Number.parseInt(v, 10),
+  )
+  .action((options: { olderThan?: number }) => {
+    process.exitCode = runCrashClean(options.olderThan);
+  });
+
+program
+  .command("debug-adapter")
+  .description("Start the Sonite debug adapter (DAP over stdio)")
+  .action(async () => {
+    await import("@sonite/debug-adapter");
   });
 
 program
