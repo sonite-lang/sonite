@@ -15,6 +15,7 @@ import { Lexer } from "../lexer/lexer.js";
 import { Parser } from "../parser/parser.js";
 import { collectReExportSpecifiers } from "./exports.js";
 import { moduleIdFromPath } from "./mangle.js";
+import { discoverStdRoot } from "./std-root.js";
 
 export type ReadFileFn = (absolutePath: string) => string;
 
@@ -105,7 +106,10 @@ export function setStdRootProvider(provider: StdRootProvider | null): void {
 }
 
 export function getStdRootPath(): string | null {
-  return stdRootProvider?.() ?? null;
+  if (stdRootProvider) {
+    return stdRootProvider();
+  }
+  return discoverStdRoot();
 }
 
 /** Provide installed registry packages (name → directory or PackageRootInfo). */

@@ -47,6 +47,7 @@
     "@sonite/llvm-win32-arm64": "workspace:*"
   },
   "devDependencies": {
+    "@sonite/compiler": "workspace:*",
     "@types/node": "^22.15.30",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"

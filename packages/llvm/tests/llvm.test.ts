@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { compile } from "@sonite/compiler";
 import {
   Backend,
   Linker,
@@ -81,6 +82,26 @@ describe.runIf(isNativeBindingAvailable())("LLVM binding", () => {
     );
     backend.dispose();
     expect(() => backend.verify()).toThrow(/disposed/);
+  });
+
+  it("parses and verifies Sonite debug IR from the compiler", () => {
+    const result = compile(
+      `function main(): void {
+  print("hi");
+}
+`,
+      { fileName: "debug-fixture.sn" },
+    );
+    expect(result.success).toBe(true);
+    expect(result.ir).toBeTruthy();
+
+    const backend = Backend.fromIr(result.ir!);
+    try {
+      backend.target({ optLevel: "O0", framePointers: true });
+      backend.verify();
+    } finally {
+      backend.dispose();
+    }
   });
 });
 

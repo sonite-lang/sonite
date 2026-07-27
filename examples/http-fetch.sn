@@ -2,9 +2,6 @@ import { Server, formatResponse, parseRequest } from "std/http";
 import { TcpListener, TcpStream } from "std/net";
 import { spawn } from "std/async";
 
-extern function sn_str_concat(a: string, b: string): string;
-extern function sn_i32_to_string(v: i32): string;
-
 /**
  * Local HTTP client↔server: Server routes a GET and the client reads the body.
  * (HttpClient.fetch works for remote URLs.)
@@ -28,10 +25,7 @@ async function serveOnce(port: i32): void {
 
 async function client(port: i32): void {
   let conn = await TcpStream.connect("127.0.0.1", port);
-  let url = sn_str_concat(
-    "GET /hello HTTP/1.1\r\nhost: 127.0.0.1:",
-    sn_str_concat(sn_i32_to_string(port), "\r\nconnection: close\r\n\r\n")
-  );
+  let url = `GET /hello HTTP/1.1\r\nhost: 127.0.0.1:${port}\r\nconnection: close\r\n\r\n`;
   await conn.write(Bytes.fromString(url));
   let chunk = await conn.read();
   let text = chunk.decode("utf8");

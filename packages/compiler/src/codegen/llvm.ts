@@ -478,6 +478,8 @@ export class LlvmCodegen {
   private thisType: ValueType | null = null;
   /** Return type of the function/method currently being emitted. */
   private currentReturnType: ValueType | "void" | null = null;
+  /** True while emitting `main` (LLVM `i32 @main`, Sonite `void`). */
+  private currentFunctionIsMain = false;
   private currentModuleId = "";
   private currentSourcePath = "sonite";
   private debugBuilder: DebugInfoBuilder | null = null;
@@ -3151,7 +3153,11 @@ export class LlvmCodegen {
       this.currentDebugFrame = null;
     }
     this.emitGcRootPop(lines);
-    lines.push(retInstruction);
+    let ret = retInstruction;
+    if (this.currentFunctionIsMain) {
+      ret = ret.replace(/\bret void\b/, "ret i32 0");
+    }
+    lines.push(ret);
   }
 
   /** Keep a heap pointer alive across subsequent allocating calls in this function. */
@@ -4123,6 +4129,7 @@ export class LlvmCodegen {
     const lines: string[] = [];
 
     const isMain = fn.name.name === "main";
+    this.currentFunctionIsMain = isMain;
     const isExtension = fn.params[0]?.isReceiver === true;
     let header = isMain
       ? "define i32 @main(i32 %argc, ptr %argv) {"
@@ -4213,6 +4220,7 @@ export class LlvmCodegen {
     lines.push("");
     this.functionBodies.push(...lines);
     this.currentReturnType = null;
+    this.currentFunctionIsMain = false;
     this.thisPtr = null;
     this.thisType = null;
     this.boxedNames = new Set();

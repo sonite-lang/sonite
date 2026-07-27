@@ -5,8 +5,6 @@ import { spawn } from "std/async";
 import { readFile, exists } from "std/fs";
 import { Json, stringify } from "std/json";
 
-extern function sn_str_concat(a: string, b: string): string;
-
 /**
  * Full HTTPS round-trip: client keeps the connection open and reads the
  * response while the server accepts, routes, and writes (stackless await).
@@ -24,15 +22,15 @@ async function client(port: i32): void {
 }
 
 function pem(name: string): string {
-  let a = sn_str_concat("examples/certs/", name);
+  let a = `examples/certs/${name}`;
   if (exists(a)) {
     return readFile(a);
   }
-  let b = sn_str_concat("certs/", name);
+  let b = `certs/${name}`;
   if (exists(b)) {
     return readFile(b);
   }
-  return readFile(sn_str_concat("../examples/certs/", name));
+  return readFile(`../examples/certs/${name}`);
 }
 
 async function main(): void {

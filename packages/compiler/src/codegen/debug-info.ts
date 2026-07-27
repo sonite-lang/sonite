@@ -35,9 +35,8 @@ export class DebugInfoBuilder {
 
   private ensureVoidType(): number {
     if (this.voidTypeId === null) {
-      const cu = this.compileUnitId ?? this.ensureCompileUnit("sonite");
       this.voidTypeId = this.alloc(
-        `!DIBasicType(name: "void", size: 0, encoding: DW_ATE_address, flags: DIFlagPublic, unit: !${cu})`,
+        `!DIBasicType(name: "void", size: 0, encoding: DW_ATE_address, flags: DIFlagPublic)`,
       );
     }
     return this.voidTypeId;
@@ -94,20 +93,14 @@ export class DebugInfoBuilder {
     return id;
   }
 
-  basicType(
-    name: string,
-    size: number,
-    encoding: string,
-    llvmName: string,
-  ): number {
+  basicType(name: string, size: number, encoding: string): number {
     const key = `basic:${name}:${size}:${encoding}`;
     const cached = this.typeIds.get(key);
     if (cached !== undefined) {
       return cached;
     }
-    const cu = this.compileUnitId ?? this.ensureCompileUnit("sonite");
     const id = this.alloc(
-      `!DIBasicType(name: ${llvmQuote(name)}, size: ${size}, encoding: ${encoding}, flags: DIFlagPublic, ${llvmName !== "void" ? `identifier: ${llvmQuote(llvmName)}, ` : ""}unit: !${cu})`,
+      `!DIBasicType(name: ${llvmQuote(name)}, size: ${size}, encoding: ${encoding}, flags: DIFlagPublic)`,
     );
     this.typeIds.set(key, id);
     return id;
@@ -119,9 +112,8 @@ export class DebugInfoBuilder {
     if (cached !== undefined) {
       return cached;
     }
-    const cu = this.compileUnitId ?? this.ensureCompileUnit("sonite");
     const id = this.alloc(
-      `!DIDerivedType(tag: DW_TAG_pointer_type, baseType: !${pointeeId}, size: ${size}, flags: DIFlagPublic, unit: !${cu})`,
+      `!DIDerivedType(tag: DW_TAG_pointer_type, baseType: !${pointeeId}, size: ${size}, flags: DIFlagPublic)`,
     );
     this.typeIds.set(key, id);
     return id;
@@ -138,14 +130,13 @@ export class DebugInfoBuilder {
     if (cached !== undefined) {
       return cached;
     }
-    const cu = this.compileUnitId ?? this.ensureCompileUnit("sonite");
     const members = memberIds.length > 0 ? memberIds.join(", ") : "";
     const elements =
       memberIds.length > 0
         ? `, elements: !${this.alloc(`!{${members}}`)}`
         : `, elements: !${this.emptyExprId}`;
     const id = this.alloc(
-      `!DICompositeType(tag: ${tag}, name: ${llvmQuote(name)}, size: ${size}, flags: DIFlagPublic, unit: !${cu}${elements})`,
+      `!DICompositeType(tag: ${tag}, name: ${llvmQuote(name)}, size: ${size}, flags: DIFlagPublic${elements})`,
     );
     this.typeIds.set(key, id);
     return id;
@@ -175,44 +166,44 @@ export class DebugInfoBuilder {
         id = this.ensureVoidType();
         break;
       case "bool":
-        id = this.basicType("bool", 8, "DW_ATE_boolean", "i1");
+        id = this.basicType("bool", 8, "DW_ATE_boolean");
         break;
       case "char":
-        id = this.basicType("char", 8, "DW_ATE_signed_char", "i8");
+        id = this.basicType("char", 8, "DW_ATE_signed_char");
         break;
       case "i8":
       case "u8":
-        id = this.basicType(typeName, 8, "DW_ATE_unsigned_char", "i8");
+        id = this.basicType(typeName, 8, "DW_ATE_unsigned_char");
         break;
       case "i16":
       case "u16":
-        id = this.basicType(typeName, 16, "DW_ATE_signed", "i16");
+        id = this.basicType(typeName, 16, "DW_ATE_signed");
         break;
       case "i32":
       case "u32":
-        id = this.basicType(typeName, 32, "DW_ATE_signed", "i32");
+        id = this.basicType(typeName, 32, "DW_ATE_signed");
         break;
       case "i64":
       case "u64":
       case "isize":
       case "usize":
-        id = this.basicType(typeName, 64, "DW_ATE_signed", "i64");
+        id = this.basicType(typeName, 64, "DW_ATE_signed");
         break;
       case "f32":
-        id = this.basicType("f32", 32, "DW_ATE_float", "float");
+        id = this.basicType("f32", 32, "DW_ATE_float");
         break;
       case "f64":
-        id = this.basicType("f64", 64, "DW_ATE_float", "double");
+        id = this.basicType("f64", 64, "DW_ATE_float");
         break;
       case "string":
-        id = this.pointerType(this.basicType("char", 8, "DW_ATE_signed_char", "i8"));
+        id = this.pointerType(this.basicType("char", 8, "DW_ATE_signed_char"));
         break;
       default:
         if (typeName.endsWith("[]")) {
           const elem = typeName.slice(0, -2);
           id = this.pointerType(this.soniteType(elem));
         } else {
-          id = this.pointerType(this.basicType("opaque", 64, "DW_ATE_address", "ptr"));
+          id = this.pointerType(this.basicType("opaque", 64, "DW_ATE_address"));
         }
         break;
     }
