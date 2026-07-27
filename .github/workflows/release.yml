@@ -52,6 +52,9 @@ jobs:
         run: pnpm install
         env:
           SONITE_SKIP_NATIVE_BUILD: "1"
+      - name: Install Homebrew LLVM (macOS x64)
+        if: matrix.platform == 'macos-x64'
+        run: brew install llvm lld
       - name: Resolve version
         id: ver
         shell: bash

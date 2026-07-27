@@ -10,8 +10,10 @@
       "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-22.1.8/LLVM-22.1.8-Linux-ARM64.tar.xz"
     },
     "macos-x64": {
-      "fileName": "LLVM-22.1.8-macOS-X64.tar.xz",
-      "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-22.1.8/LLVM-22.1.8-macOS-X64.tar.xz"
+      "source": "homebrew",
+      "formula": "llvm",
+      "lldFormula": "lld",
+      "note": "Upstream LLVM 20+ no longer publishes macOS-X64 official tarballs; use Homebrew llvm / lld bottles (same version)."
     },
     "macos-arm64": {
       "fileName": "LLVM-22.1.8-macOS-ARM64.tar.xz",

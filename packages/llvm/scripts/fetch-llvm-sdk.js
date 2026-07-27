@@ -8,12 +8,15 @@ import {
   existsSync,
   mkdirSync,
   readdirSync,
+  readFileSync,
   rmSync,
   statSync,
   cpSync,
+  symlinkSync,
+  writeFileSync,
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { Readable } from "node:stream";
@@ -113,6 +116,141 @@ function extractArchive(archivePath, destDir) {
   }
 }
 
+function brewPrefix(formula) {
+  const r = spawnSync("brew", ["--prefix", formula], { encoding: "utf8" });
+  if (r.status !== 0) {
+    return null;
+  }
+  const prefix = r.stdout.trim();
+  return prefix && existsSync(prefix) ? prefix : null;
+}
+
+function majorMinor(v) {
+  const parts = String(v).split(".");
+  return `${parts[0]}.${parts[1]}`;
+}
+
+function linkInto(destDir, srcPath) {
+  mkdirSync(destDir, { recursive: true });
+  const dest = join(destDir, basename(srcPath));
+  rmSync(dest, { recursive: true, force: true });
+  try {
+    symlinkSync(srcPath, dest);
+  } catch {
+    cpSync(srcPath, dest, { recursive: true, dereference: true });
+  }
+}
+
+/**
+ * Upstream LLVM 20+ dropped official macOS-X64 tarballs. Materialize a cache
+ * SDK from Homebrew `llvm` (+ `lld`) bottles at the pinned major.minor.
+ */
+function ensureHomebrewSdk(platformId, asset) {
+  const formula = asset.formula || "llvm";
+  const lldFormula = asset.lldFormula || "lld";
+  console.error(
+    `info: ${platformId} has no official LLVM tarball; resolving via Homebrew ${formula}…`,
+  );
+
+  let llvmPrefix = brewPrefix(formula);
+  if (!llvmPrefix) {
+    console.error(`info: brew install ${formula} ${lldFormula}…`);
+    const install = spawnSync(
+      "brew",
+      ["install", formula, lldFormula],
+      { stdio: "inherit", env: process.env },
+    );
+    if (install.status !== 0) {
+      throw new Error(
+        `Homebrew install of ${formula}/${lldFormula} failed. On Intel Macs install manually: brew install llvm lld`,
+      );
+    }
+    llvmPrefix = brewPrefix(formula);
+  }
+  if (!llvmPrefix) {
+    throw new Error(
+      `Homebrew ${formula} not found. Install with: brew install ${formula} ${lldFormula}`,
+    );
+  }
+
+  const llvmConfig = join(llvmPrefix, "bin", "llvm-config");
+  if (!existsSync(llvmConfig)) {
+    throw new Error(`Homebrew ${formula} is missing bin/llvm-config at ${llvmPrefix}`);
+  }
+  const ver = spawnSync(llvmConfig, ["--version"], { encoding: "utf8" });
+  if (ver.status !== 0) {
+    throw new Error(`llvm-config --version failed: ${ver.stderr || ver.stdout}`);
+  }
+  const found = ver.stdout.trim();
+  if (majorMinor(found) !== majorMinor(meta.version)) {
+    throw new Error(
+      `Homebrew LLVM version ${found} is incompatible; Sonite requires ${meta.version} (major.minor). Try: brew upgrade ${formula}`,
+    );
+  }
+
+  const lldPrefix = brewPrefix(lldFormula);
+  const cacheRoot = sdkCacheRoot(platformId);
+  const marker = join(cacheRoot, ".sonite-sdk-source");
+  if (
+    looksLikeSdk(cacheRoot) &&
+    existsSync(marker) &&
+    readFileSync(marker, "utf8").includes(`homebrew:${found}`)
+  ) {
+    console.error(`info: reusing Homebrew-backed SDK cache at ${cacheRoot}`);
+    return cacheRoot;
+  }
+
+  console.error(`info: materializing Homebrew SDK cache at ${cacheRoot}`);
+  rmSync(cacheRoot, { recursive: true, force: true });
+  mkdirSync(join(cacheRoot, "bin"), { recursive: true });
+  mkdirSync(join(cacheRoot, "lib"), { recursive: true });
+
+  linkInto(join(cacheRoot, "bin"), llvmConfig);
+  // Prefer a real include tree (llvm-config --includedir).
+  const includeDir = spawnSync(llvmConfig, ["--includedir"], {
+    encoding: "utf8",
+  }).stdout.trim();
+  if (includeDir && existsSync(includeDir)) {
+    const destInclude = join(cacheRoot, "include");
+    rmSync(destInclude, { recursive: true, force: true });
+    try {
+      symlinkSync(includeDir, destInclude);
+    } catch {
+      mkdirSync(destInclude, { recursive: true });
+      cpSync(includeDir, destInclude, { recursive: true, dereference: true });
+    }
+  } else if (existsSync(join(llvmPrefix, "include"))) {
+    linkInto(cacheRoot, join(llvmPrefix, "include"));
+  }
+
+  const libDirs = [join(llvmPrefix, "lib")];
+  if (lldPrefix) {
+    libDirs.push(join(lldPrefix, "lib"));
+  }
+  const wanted = (name) =>
+    /^(libLLVM|liblld)/.test(name) &&
+    (name.includes(".dylib") || name.includes(".so") || name.endsWith(".a"));
+
+  for (const libDir of libDirs) {
+    if (!existsSync(libDir)) continue;
+    for (const entry of readdirSync(libDir)) {
+      if (!wanted(entry)) continue;
+      linkInto(join(cacheRoot, "lib"), join(libDir, entry));
+    }
+  }
+
+  writeFileSync(
+    marker,
+    `homebrew:${found}\nformula=${formula}\nllvmPrefix=${llvmPrefix}\nlldPrefix=${lldPrefix || ""}\n`,
+  );
+
+  if (!looksLikeSdk(cacheRoot)) {
+    throw new Error(`Homebrew SDK materialization incomplete at ${cacheRoot}`);
+  }
+  console.error(`info: LLVM SDK ready at ${cacheRoot} (Homebrew ${found})`);
+  return cacheRoot;
+}
+
 /**
  * Ensure the pinned LLVM SDK is available; return its root path.
  */
@@ -127,14 +265,24 @@ export async function ensureLlvmSdk(platformId = hostPlatformId()) {
     return override;
   }
 
+  const asset = meta.assets[platformId];
+  if (!asset) {
+    throw new Error(`no LLVM SDK asset mapped for platform ${platformId}`);
+  }
+
+  if (asset.source === "homebrew") {
+    return ensureHomebrewSdk(platformId, asset);
+  }
+
   const cacheRoot = sdkCacheRoot(platformId);
   if (looksLikeSdk(cacheRoot)) {
     return cacheRoot;
   }
 
-  const asset = meta.assets[platformId];
-  if (!asset) {
-    throw new Error(`no LLVM SDK asset mapped for platform ${platformId}`);
+  if (!asset.url || !asset.fileName) {
+    throw new Error(
+      `LLVM SDK asset for ${platformId} is missing url/fileName (and is not a homebrew source)`,
+    );
   }
 
   mkdirSync(dirname(cacheRoot), { recursive: true });

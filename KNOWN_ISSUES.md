@@ -23,7 +23,7 @@ Validated locally on Linux x64 (2026-07-27): ASAN, UBSAN, LSAN, runtime stress (
 | KI-015 | Official website not shipped | informational | all | docs | Use [docs/README.md](docs/README.md) | Website |
 | KI-016 | Official install URLs on sonite.dev may lag GitHub Releases | informational | all | install | Use GitHub raw URL or `SONITE_RELEASE_BASE` | Website / CDN |
 | KI-017 | Debug builds emit `invalid !dbg metadata attachment` warnings; LLVM ignores bad debug info | major | all | debugging, DWARF | Use `sn build --release` when debug info is not needed; binaries still link and run | Fix DILocalVariable / dbg attach scopes |
-| KI-018 | Cross-platform CI Node headers / retired macOS runners | informational | CI matrix | release CI | Fixed: `SONITE_SKIP_NATIVE_BUILD` on install, `node-api-headers` fallback, `macos-15-intel` for x64 | Confirm CI green after push |
+| KI-019 | Official LLVM 20+ releases omit macOS-X64 tarballs | informational | macos-x64 | native toolchain | CI/dev use Homebrew `llvm`+`lld` bottles via `source: homebrew` in `llvm-version.json`; release tarball still bundles libs | Host our own SDK or restore if upstream returns |
 
 ## Stability
 

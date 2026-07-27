@@ -25,12 +25,14 @@ pnpm build:native
 
 This:
 
-1. Downloads the pinned LLVM 22.1.8 SDK into `~/.cache/sonite/llvm-sdk-22.1.8-<platform>/` (or uses `SONITE_LLVM_SDK`)
+1. Downloads the pinned LLVM 22.1.8 SDK into `~/.cache/sonite/llvm-sdk-22.1.8-<platform>/` (or uses `SONITE_LLVM_SDK`). On **macOS x64**, official LLVM tarballs no longer exist — Homebrew `llvm` + `lld` bottles are materialized into that cache instead.
 2. Compiles the N-API addon against that SDK
 3. Bundles required shared libraries into `packages/llvm-<platform>/lib`
 4. Validates that `ldd`/`otool` does not resolve libLLVM/liblld from the system
 
 Override with `SONITE_LLVM_SDK=/path/to/sdk`. For emergency local iteration only: `SONITE_BUNDLE_FROM_SYSTEM=1` (still bundles libs into the package).
+
+Intel Mac contributors: `brew install llvm lld` (Homebrew must provide major.minor matching the pin in `llvm-version.json`).
 
 Version pin: [`scripts/llvm-version.json`](scripts/llvm-version.json) / [`src/version.ts`](src/version.ts).
 
