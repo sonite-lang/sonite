@@ -68,13 +68,4 @@ Absolute times vary by machine — use these as order-of-magnitude anchors, not 
 
 Benched reports mean, median, min, max, standard deviation, and ops/s per benchmark. Results vary by hardware — compare runs on the same machine over time.
 
-## Future coverage
-
-Additional instrumentation may cover:
-
-- Peak compiler RSS / precise GC pause histograms
-- TCP/HTTP/HTTPS throughput at scale
-- Package manager resolve/install against a live registry at scale
-- Release profile (`--release`) compile times
-
-Track planned work in [KNOWN_ISSUES.md](../KNOWN_ISSUES.md).
+See also [KNOWN_ISSUES.md](../KNOWN_ISSUES.md) for tracked performance-related limitations.

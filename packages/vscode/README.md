@@ -47,9 +47,9 @@ pnpm --filter sonite-vscode build
 
 ## Screenshots
 
-Add Marketplace gallery images under `images/` (editor with diagnostics,
-completions, and debug session) when capturing for publication. The extension
-icon is `images/icon.png`.
+Marketplace gallery images can be added under `images/`. The extension icon is
+`images/icon.png`; `.sn` files use `images/sn-file.png` (dark UI) and
+`images/sn-file-light.png` (light UI) in the explorer.
 
 ## Troubleshooting
 

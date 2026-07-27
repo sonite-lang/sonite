@@ -4,9 +4,9 @@ Tracked limitations and planned improvements. Severity: **blocker**, **critical*
 
 | ID | Issue | Severity | Platforms | Affected features | Workaround | Planned |
 |----|-------|----------|-----------|-------------------|------------|---------|
-| KI-001 | Runtime sanitizer jobs are optional (not permanent CI gates) | informational | all | runtime hardening | Run `pnpm --filter @sonite/runtime test:asan` / `test:ubsan` / `test:stress` before release | Keep as release checklist |
+| KI-001 | Runtime sanitizer jobs are not permanent CI gates | informational | all | runtime hardening | Run `pnpm --filter @sonite/runtime test:asan` / `test:ubsan` / `test:stress` as part of release validation | Keep as release checklist |
 | KI-002 | GC stress suite is lightweight (not a full heap fuzzer) | minor | all | GC | Stress + smoke tests pass | Expand stress coverage |
-| KI-003 | Network/TLS stress is example-scale, not load-test grade | minor | all | async, networking | `examples/stress/` + e2e suites | Optional load tests post-v1 |
+| KI-003 | Network/TLS stress is example-scale, not load-test grade | minor | all | async, networking | `examples/stress/` + e2e suites | Load tests post-v1 |
 | KI-004 | JSON parser not in `std/json` (stringify only) | informational | all | JSON | Use an ecosystem package when available | `@sonite/json` or community package |
 | KI-005 | Logpoints unsupported in debugger | informational | Linux, macOS | debugging | Use breakpoints + conditional expressions | Debugger improvements |
 | KI-006 | Async task DAP polling deferred | minor | all | async debugging | Inspect via runtime task registry / stack traces | Debugger improvements |
@@ -19,7 +19,7 @@ Tracked limitations and planned improvements. Severity: **blocker**, **critical*
 | KI-013 | External variables in FFI not supported | informational | all | FFI | Use getter functions | FFI |
 | KI-014 | Registry server-side abuse controls | informational | all | registry | Client-side rate limits documented | Registry ops |
 | KI-015 | Official website not shipped | informational | all | docs | Use [docs/README.md](docs/README.md) | Website |
-| KI-016 | Installer scripts hosted at sonite.dev after you publish mirrors | informational | all | install | Use GitHub raw URL or `SONITE_RELEASE_BASE` | Website / CDN |
+| KI-016 | Official install URLs on sonite.dev may lag GitHub Releases | informational | all | install | Use GitHub raw URL or `SONITE_RELEASE_BASE` | Website / CDN |
 
 ## Stability
 

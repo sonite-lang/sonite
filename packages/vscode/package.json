@@ -8,7 +8,7 @@
   "publisher": "sonite",
   "icon": "images/icon.png",
   "galleryBanner": {
-    "color": "#0F172A",
+    "color": "#000000",
     "theme": "dark"
   },
   "repository": {
@@ -67,7 +67,11 @@
         "extensions": [
           ".sn"
         ],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./images/sn-file-light.png",
+          "dark": "./images/sn-file.png"
+        }
       }
     ],
     "grammars": [

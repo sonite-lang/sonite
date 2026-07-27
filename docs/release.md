@@ -1,6 +1,6 @@
 # Releasing Sonite
 
-This document covers cutting a release candidate and a final `v1.0.0` from this repository. Publishing to npm, the VS Code Marketplace, and hosting `install.sh` on `sonite.dev` are manual steps you run after CI produces artifacts.
+This document covers cutting a release candidate and a final `v1.0.0` from this repository. After CI produces artifacts, publish npm packages, the VS Code Marketplace extension, and host `install.sh` / `install.ps1` on `sonite.dev`.
 
 ## Prerequisites
 
@@ -51,17 +51,16 @@ git push origin v1.0.0-rc.1
 ```
 
 3. Wait for **Release** workflow to pack all platforms and attach assets to the GitHub Release.
-4. Host or temporarily point installers at the release:
+4. Point installers at the release:
 
 ```bash
-# After assets are public:
 curl -fsSL https://raw.githubusercontent.com/ethan-davies/sonite/v1.0.0-rc.1/scripts/install.sh | \
   SONITE_VERSION=1.0.0-rc.1 sh
 ```
 
 Or set `SONITE_RELEASE_BASE` to the release download base URL.
 
-5. Run the [RC validation checklist](#rc-validation-checklist) on at least one machine per platform (or rely on CI smoke + one manual Linux install).
+5. Run the [RC validation checklist](#rc-validation-checklist) on each supported platform.
 
 ## Promote to v1.0.0
 
@@ -82,7 +81,7 @@ pnpm --filter "./packages/*" publish --access public --no-git-checks
 
 Publish `@sonite/debug-adapter` as well (it is no longer private) so `@sonite/cli` resolves on npm. Platform LLVM packages (`@sonite/llvm-linux-x64`, …) must be published with their `native/` and `lib/` contents built on CI or a matching machine.
 
-Optional dry-run:
+Dry-run:
 
 ```bash
 pnpm --filter "./packages/*" publish --dry-run --no-git-checks
@@ -100,12 +99,14 @@ On a fresh machine (or clean `SONITE_HOME`):
 - [ ] `sn fmt` / `sn fmt --check`
 - [ ] Upgrade path: re-run installer or `sn self-update`
 - [ ] VS Code: install VSIX, open `.sn`, LSP starts
-- [ ] Debug adapter launch (optional)
+- [ ] Debug adapter launch
 - [ ] FFI example under `examples/native-ffi/`
 
 Also validate an existing `~/.sonite` upgrade (config/credentials preserved).
 
-## Runtime stress (optional, pre-release)
+## Runtime stress and sanitizers
+
+Run these before calling an RC green:
 
 ```bash
 pnpm --filter @sonite/runtime test:stress
@@ -114,7 +115,7 @@ pnpm --filter @sonite/runtime test:asan
 pnpm --filter @sonite/runtime test:ubsan
 ```
 
-Critical failures should be fixed or classified in `KNOWN_ISSUES.md` before calling the RC green.
+Critical failures should be fixed or classified in `KNOWN_ISSUES.md`.
 
 ## Layout after install
 

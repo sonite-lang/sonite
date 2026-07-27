@@ -4,6 +4,7 @@
 
 ### Added
 
+- Extension icon and `.sn` file icons for the explorer
 - Aligned extension version with Sonite 1.0.0
 - Marketplace-ready packaging with a bundled language server and standard library
 - Production IDE features: diagnostics, completion (with auto-import), hover,

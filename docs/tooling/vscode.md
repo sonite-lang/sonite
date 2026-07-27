@@ -15,6 +15,7 @@ code --install-extension sonite-vscode-*.vsix
 ## Features
 
 - Syntax highlighting for `.sn`
+- Language file icons for `.sn` in the explorer
 - LSP integration (diagnostics, completion, hover, go-to-definition, references, rename)
 - Semantic token coloring
 - Format on save

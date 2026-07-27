@@ -317,9 +317,9 @@ The extension is technically complete, but should be validated as a product.
 
 ### Release
 
-* [ ] Final extension icon *(deferred / existing icon kept)*
+* [x] Final extension icon
 * [x] Marketplace metadata
-* [ ] Screenshots *(placeholders documented; capture before Marketplace submit)*
+* [ ] Screenshots
 * [x] README
 * [x] Versioning aligned with Sonite
 * [x] `.vsix` production build (`sonite-vscode-1.0.0.vsix`)
@@ -346,7 +346,7 @@ This is the biggest remaining gap I would address before calling v1.0 stable.
 
 Complete the remaining hardening:
 
-* [x] ASAN testing (optional harness; run before release)
+* [x] ASAN testing
 * [x] UBSAN testing
 * [x] LeakSanitizer testing (`test:lsan` / ASAN detect_leaks)
 * [x] GC stress tests
@@ -360,7 +360,7 @@ Complete the remaining hardening:
 * [x] File handle cleanup tests
 * [x] TLS cleanup tests (TLS smoke)
 
-These don't necessarily need to be permanent v1 CI gates, but they should be run before release and critical failures resolved.
+These don't necessarily need to be permanent v1 CI gates, but they should be run as part of release validation and critical failures resolved.
 
 ### Cross-platform
 

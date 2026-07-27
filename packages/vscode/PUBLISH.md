@@ -48,7 +48,7 @@ Or publish an already-built VSIX:
 npx vsce publish --packagePath sonite-vscode-1.0.0.vsix
 ```
 
-## Open VSX (optional)
+## Open VSX
 
 ```bash
 npx ovsx publish sonite-vscode-1.0.0.vsix -p <open-vsx-token>

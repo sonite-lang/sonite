@@ -36,12 +36,12 @@ Lockfiles may record `publishedBy` and `publishedAt` when the registry provides 
 
 Sonite itself depends on:
 
-- **npm packages** for the Node CLI (commander, tar, semver, …) — review `pnpm-lock.yaml` and prefer `pnpm audit` in the monorepo before releases
+- **npm packages** for the Node CLI (commander, tar, semver, …) — review `pnpm-lock.yaml` and prefer `pnpm audit` in the monorepo
 - **Pinned LLVM/LLD** downloads (see `packages/llvm/scripts/llvm-version.json`) with checksum validation in fetch scripts
 - **Bundled OpenSSL** static libraries fetched by the runtime build
 - **Registry packages** consumed by end users — integrity is enforced via `project.lock` SHA-256 hashes
 
-Before cutting a release, confirm lockfiles are committed, LLVM/OpenSSL pins are intentional, and no unexpected new native download URLs were introduced.
+Keep lockfiles committed, LLVM/OpenSSL pins intentional, and avoid unexpected new native download URLs.
 
 ## Response process
 
