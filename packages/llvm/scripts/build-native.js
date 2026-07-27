@@ -105,23 +105,53 @@ function napiIncludeDir() {
   return r.stdout.trim().replace(/^"|"$/g, "");
 }
 
-function nodeIncludeDir() {
-  if (existsSync("/usr/include/node")) return "/usr/include/node";
-  // node-gyp headers cache
+function findNodeIncludeDir() {
   const home = process.env.HOME || process.env.USERPROFILE || "";
+  const execDir = dirname(process.execPath);
   const candidates = [
-    join(home, ".cache/node-gyp"),
-    join(home, "AppData/Local/node-gyp/Cache"),
+    "/usr/include/node",
+    join(execDir, "..", "include", "node"),
+    join(execDir, "include", "node"),
   ];
-  for (const base of candidates) {
+  for (const inc of candidates) {
+    if (existsSync(join(inc, "node_api.h"))) return inc;
+  }
+  // node-gyp headers cache (Linux/macOS + Windows)
+  for (const base of [
+    join(home, ".cache/node-gyp"),
+    join(home, "Library/Caches/node-gyp"),
+    join(home, "AppData/Local/node-gyp/Cache"),
+  ]) {
     if (!existsSync(base)) continue;
     for (const ver of readdirSync(base)) {
       const inc = join(base, ver, "include", "node");
       if (existsSync(join(inc, "node_api.h"))) return inc;
     }
   }
+  return null;
+}
+
+function nodeIncludeDir() {
+  const existing = findNodeIncludeDir();
+  if (existing) return existing;
+
+  // setup-node / official tarballs often omit headers; fetch via node-gyp.
+  console.error("info: Node headers missing; installing via node-gyp…");
+  const npx = spawnSync(
+    "npx",
+    ["--yes", "node-gyp@11", "install", `v${process.versions.node}`],
+    { cwd: root, stdio: "inherit", env: process.env, shell: true },
+  );
+  if (npx.status !== 0) {
+    throw new Error(
+      "Node headers not found and node-gyp install failed (expected /usr/include/node or node-gyp cache)",
+    );
+  }
+
+  const after = findNodeIncludeDir();
+  if (after) return after;
   throw new Error(
-    "Node headers not found (expected /usr/include/node or node-gyp cache)",
+    "Node headers not found after node-gyp install (expected /usr/include/node or node-gyp cache)",
   );
 }
 

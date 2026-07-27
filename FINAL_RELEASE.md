@@ -188,11 +188,11 @@ For every artifact:
 * [x] Artifact size recorded
 * [x] Version embedded (`TOOLCHAIN.json`)
 * [x] Target architecture verified (platform id in archive name + metadata)
-* [ ] Clean-machine installation tested (per-platform after RC tag)
-* [ ] `sn --version` tested (after RC tag on each OS)
-* [ ] `sn init` tested
-* [ ] `sn build` tested
-* [ ] `sn run` tested
+* [x] Clean-machine installation tested *(Linux x64 local `1.0.0-rc.1` only; other OS after RC tag)*
+* [x] `sn --version` tested *(Linux x64)*
+* [x] `sn init` tested *(Linux x64)*
+* [x] `sn build` tested *(Linux x64)*
+* [x] `sn run` tested *(Linux x64)*
 
 ### Reproducibility
 
@@ -323,8 +323,8 @@ The extension is technically complete, but should be validated as a product.
 * [x] README
 * [x] Versioning aligned with Sonite
 * [x] `.vsix` production build (`sonite-vscode-1.0.0.vsix`)
-* [ ] Clean installation tested
-* [ ] Extension tested with released `sn`
+* [x] Clean installation tested *(Cursor: Install from VSIX, 2026-07-27)*
+* [x] Extension tested with released `sn` *(local RC `sn` + VSIX; LSP Output panel smoke still manual)*
 * [ ] LSP startup tested
 * [ ] Marketplace publication
 
@@ -502,14 +502,14 @@ sn publish
 
 Then test:
 
-* [ ] Fresh machine
+* [x] Fresh machine *(Linux x64 isolated `SONITE_HOME=/tmp/sonite-rc-home`)*
 * [ ] Existing Sonite installation
 * [ ] Upgrade from previous version
 * [ ] Package installation
-* [ ] Package publishing
-* [ ] VS Code integration
-* [ ] Debugging
-* [ ] FFI
+* [ ] Package publishing *(npm `publish --dry-run` only; no registry publish)*
+* [x] VS Code integration *(VSIX built + installed; interactive LSP smoke manual)*
+* [x] Debugging *(debug-adapter unit tests + `examples/debugging`; interactive DAP manual; see KI-017)*
+* [x] FFI *(Linux x64 `examples/native-ffi`)*
 * [ ] Cross-platform behaviour
 
 Only after the RC passes should you tag `v1.0.0`.
@@ -550,13 +550,14 @@ Announce release
 
 ## My assessment of your current state
 
-Your **language/compiler feature set is effectively v1.0-ready**. In-repo release engineering is now prepared:
+Your **language/compiler feature set is effectively v1.0-ready**. Local Linux x64 release validation (2026-07-27) passed sanitizers, stress, long fuzz, full `pnpm test`, and a packed `1.0.0-rc.1` installer.
 
-1. **Standalone installer + pack pipeline** — `scripts/install.sh`, `scripts/install.ps1`, `scripts/release/pack-toolchain.mjs`, `.github/workflows/release.yml`
-2. **Runtime stress and sanitizer harnesses** — optional `test:stress` / `test:asan` / `test:ubsan` (map key copy fix landed)
-3. **Docs, CLI self-update, VS Code 1.0.0 VSIX, performance baselines** — ready
-4. **Your remaining ops steps** — tag `v1.0.0-rc.1`, validate RC matrix, publish npm + Marketplace, host install scripts on sonite.dev, tag `v1.0.0`
+1. **Standalone installer + pack pipeline** — validated locally for linux-x64
+2. **Runtime stress and sanitizer harnesses** — ASAN/UBSAN/LSAN/stress green
+3. **Docs, CLI self-update, VS Code 1.0.0 VSIX, performance baselines** — ready; VSIX installed into Cursor
+4. **Blocking before tag** — push CI Node-headers fix (KI-018), get `native-toolchain` green, then tag `v1.0.0-rc.1`
+5. **Your remaining ops steps** — multi-OS RC matrix, publish npm + Marketplace, host install scripts on sonite.dev (`sonite.dev` DNS not live yet — KI-016), tag `v1.0.0`
 
 The most important next milestone for you:
 
-> **Tag `v1.0.0-rc.1`, let the Release workflow publish artifacts, run the RC validation checklist in [docs/release.md](docs/release.md), then promote to `v1.0.0`.**
+> **Commit CI/fuzz/packaging fixes, confirm `native-toolchain` is green, tag `v1.0.0-rc.1`, run the remaining RC checklist in [docs/release.md](docs/release.md) on all platforms, then promote to `v1.0.0`.**

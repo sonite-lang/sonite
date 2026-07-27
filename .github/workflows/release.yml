@@ -49,6 +49,8 @@ jobs:
           cache: pnpm
       - name: Install deps
         run: pnpm install
+        env:
+          SONITE_SKIP_NATIVE_BUILD: "1"
       - name: Resolve version
         id: ver
         shell: bash

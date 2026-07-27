@@ -1,0 +1,4 @@
+# Pack-toolchain staging must never ship in the npm tarball.
+dist/release/
+**/.staging-*/
+**/_deploy/

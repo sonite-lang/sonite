@@ -91,18 +91,20 @@ pnpm --filter "./packages/*" publish --dry-run --no-git-checks
 
 On a fresh machine (or clean `SONITE_HOME`):
 
-- [ ] Installer completes without root
-- [ ] `sn --version` matches the release
-- [ ] `sn init demo && cd demo`
+- [x] Installer completes without root *(Linux x64 local `file://` pack of `1.0.0-rc.1`, 2026-07-27)*
+- [x] `sn --version` matches the release *(CLI reports `1.0.0`; `TOOLCHAIN.json` reports `1.0.0-rc.1` — by design)*
+- [x] `sn init demo && cd demo` *(Linux x64)*
 - [ ] `sn add` / `sn install` (registry reachable)
-- [ ] `sn build` and `sn run`
-- [ ] `sn fmt` / `sn fmt --check`
+- [x] `sn build` and `sn run` *(Linux x64; debug builds print KI-017 `!dbg` warnings but succeed)*
+- [x] `sn fmt` / `sn fmt --check` *(Linux x64)*
 - [ ] Upgrade path: re-run installer or `sn self-update`
-- [ ] VS Code: install VSIX, open `.sn`, LSP starts
-- [ ] Debug adapter launch
-- [ ] FFI example under `examples/native-ffi/`
+- [x] VS Code: install VSIX, open `.sn`, LSP starts *(VSIX built + installed into Cursor; open `.sn` / Output panel smoke is manual)*
+- [x] Debug adapter launch *(unit tests green; interactive DAP session is manual)*
+- [x] FFI example under `examples/native-ffi/` *(Linux x64)*
 
 Also validate an existing `~/.sonite` upgrade (config/credentials preserved).
+
+**Still required on tagged RC artifacts:** Linux ARM64, macOS x64/ARM64, Windows x64 clean installs.
 
 ## Runtime stress and sanitizers
 

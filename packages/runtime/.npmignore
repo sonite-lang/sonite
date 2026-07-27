@@ -1,0 +1,13 @@
+# Intermediate C objects and local test/stress binaries (prebuilt/ is the ship path).
+dist/obj/
+dist/runtime_smoke
+dist/async_smoke
+dist/tls_smoke
+dist/net_extras_smoke
+dist/debug_smoke
+dist/gc_stress
+dist/async_stress
+dist/exception_stress
+dist/cleanup_stress
+dist/*.o
+dist/*.a

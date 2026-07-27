@@ -2,6 +2,8 @@
 
 Tracked limitations and planned improvements. Severity: **blocker**, **critical**, **major**, **minor**, **informational** / known limitation / post-v1.
 
+Validated locally on Linux x64 (2026-07-27): ASAN, UBSAN, LSAN, runtime stress (incl. GC), net/TLS stress + TLS smoke/e2e, `test:fuzz:long` (10k iters), crash-regressions, full `pnpm test`, local `1.0.0-rc.1` pack + isolated installer, npm publish dry-run, VSIX package + Cursor install.
+
 | ID | Issue | Severity | Platforms | Affected features | Workaround | Planned |
 |----|-------|----------|-----------|-------------------|------------|---------|
 | KI-001 | Runtime sanitizer jobs are not permanent CI gates | informational | all | runtime hardening | Run `pnpm --filter @sonite/runtime test:asan` / `test:ubsan` / `test:stress` as part of release validation | Keep as release checklist |
@@ -13,22 +15,26 @@ Tracked limitations and planned improvements. Severity: **blocker**, **critical*
 | KI-007 | Windows ARM64 target not supported | informational | Windows ARM64 | compilation | Use Windows x64 | Platform expansion |
 | KI-008 | Workspace monorepos not supported | minor | all | package management | Path dependencies for local packages | Workspaces |
 | KI-009 | Git URL dependencies unsupported | informational | all | package management | Publish to registry or use path deps | Git dependencies |
-| KI-010 | Compiler fuzz tests not in CI | minor | all | compiler stability | Run `pnpm test:fuzz` locally | CI fuzz job |
+| KI-010 | Compiler fuzz tests not in CI | minor | all | compiler stability | Run `pnpm test:fuzz` / `test:fuzz:long` locally | CI fuzz job |
 | KI-011 | No function overloads (by design) | informational | all | language | Use distinct function names or union parameters | — |
 | KI-012 | Generic lambdas not supported | minor | all | lambdas | Use named functions with explicit types | Language |
 | KI-013 | External variables in FFI not supported | informational | all | FFI | Use getter functions | FFI |
 | KI-014 | Registry server-side abuse controls | informational | all | registry | Client-side rate limits documented | Registry ops |
 | KI-015 | Official website not shipped | informational | all | docs | Use [docs/README.md](docs/README.md) | Website |
 | KI-016 | Official install URLs on sonite.dev may lag GitHub Releases | informational | all | install | Use GitHub raw URL or `SONITE_RELEASE_BASE` | Website / CDN |
+| KI-017 | Debug builds emit `invalid !dbg metadata attachment` warnings; LLVM ignores bad debug info | major | all | debugging, DWARF | Use `sn build --release` when debug info is not needed; binaries still link and run | Fix DILocalVariable / dbg attach scopes |
+| KI-018 | Cross-platform CI was failing at `pnpm install` (LLVM postinstall needs Node headers under `actions/setup-node`) | critical | CI matrix | release CI | Fixed in-tree: `SONITE_SKIP_NATIVE_BUILD=1` on install + auto `node-gyp install` in `build-native.js` — needs commit + green `native-toolchain` before tag | Confirm CI green after push |
 
 ## Stability
 
 There are **no known blocker-severity** issues in:
 
-- Compiler crashes on normal invalid input (fuzz + crash-regression suite)
-- Runtime smoke / stress tests on Linux (ASAN/UBSAN/stress harnesses pass locally)
+- Compiler crashes on normal invalid input (fuzz + crash-regression suite; `test:fuzz:long` passed 2026-07-27)
+- Runtime smoke / stress tests on Linux (ASAN/UBSAN/LSAN/stress harnesses pass locally)
 - Package manager lockfile integrity and tarball verification
-- Cross-platform native toolchain CI (five supported targets)
+- Local linux-x64 standalone installer (`file://` pack of `1.0.0-rc.1`)
+
+**Before tagging `v1.0.0-rc.1`:** push CI fixes (KI-018) and confirm `native-toolchain.yml` is green on all five platforms. Multi-OS installer validation still pending after the Release workflow publishes artifacts.
 
 `sn_map_set` copies keys into GC-managed strings (ASAN stack-use-after-scope fix, 2026-07-27).
 

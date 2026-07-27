@@ -15,6 +15,8 @@ import { Parser } from "../src/parser/index.js";
  */
 
 const DEFAULT_ITERS = Number(process.env.FUZZ_ITERS ?? "40");
+/** Scale Vitest timeout with iteration count (default 5s is too low for long campaigns). */
+const FUZZ_TEST_TIMEOUT_MS = Math.max(30_000, DEFAULT_ITERS * 50);
 
 function mulberry32(seed: number): () => number {
   let t = seed >>> 0;
@@ -173,15 +175,19 @@ describe("compiler frontend fuzz", () => {
     }
   });
 
-  it("random bytes and unicode do not throw", () => {
-    const rng = mulberry32(0x5f022);
-    for (let i = 0; i < DEFAULT_ITERS; i += 1) {
-      assertLexerParserNoThrow(`bytes-${i}`, randomBytes(rng, 1 + Math.floor(rng() * 64)));
-      assertLexerParserNoThrow(`uni-${i}`, randomUnicode(rng, 1 + Math.floor(rng() * 32)));
-    }
-  });
+  it(
+    "random bytes and unicode do not throw",
+    { timeout: FUZZ_TEST_TIMEOUT_MS },
+    () => {
+      const rng = mulberry32(0x5f022);
+      for (let i = 0; i < DEFAULT_ITERS; i += 1) {
+        assertLexerParserNoThrow(`bytes-${i}`, randomBytes(rng, 1 + Math.floor(rng() * 64)));
+        assertLexerParserNoThrow(`uni-${i}`, randomUnicode(rng, 1 + Math.floor(rng() * 32)));
+      }
+    },
+  );
 
-  it("token soup does not throw", () => {
+  it("token soup does not throw", { timeout: FUZZ_TEST_TIMEOUT_MS }, () => {
     const rng = mulberry32(0xc0ffee);
     for (let i = 0; i < DEFAULT_ITERS; i += 1) {
       const source = tokenSoup(rng, 4 + Math.floor(rng() * 40));
@@ -190,7 +196,7 @@ describe("compiler frontend fuzz", () => {
     }
   });
 
-  it("mutated valid programs do not throw", () => {
+  it("mutated valid programs do not throw", { timeout: FUZZ_TEST_TIMEOUT_MS }, () => {
     const rng = mulberry32(0xdeadbeef);
     for (let i = 0; i < DEFAULT_ITERS; i += 1) {
       const base = VALID_SNIPPETS[Math.floor(rng() * VALID_SNIPPETS.length)]!;
@@ -199,7 +205,7 @@ describe("compiler frontend fuzz", () => {
     }
   });
 
-  it("truncated programs do not throw", () => {
+  it("truncated programs do not throw", { timeout: FUZZ_TEST_TIMEOUT_MS }, () => {
     const rng = mulberry32(0x1234567);
     for (let i = 0; i < DEFAULT_ITERS; i += 1) {
       const base = VALID_SNIPPETS[Math.floor(rng() * VALID_SNIPPETS.length)]!;
@@ -208,7 +214,7 @@ describe("compiler frontend fuzz", () => {
     }
   });
 
-  it("deeply nested programs do not throw", () => {
+  it("deeply nested programs do not throw", { timeout: FUZZ_TEST_TIMEOUT_MS }, () => {
     const rng = mulberry32(0xabcdef);
     for (let i = 0; i < Math.min(DEFAULT_ITERS, 20); i += 1) {
       const depth = 10 + Math.floor(rng() * 40);

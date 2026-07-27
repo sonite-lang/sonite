@@ -77,7 +77,14 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a === "--platform") out.platform = argv[++i];
     else if (a === "--version") out.version = argv[++i];
-    else if (a === "--out") out.outDir = resolve(argv[++i]);
+    else if (a === "--out") {
+      // Always resolve relative --out against the repo root (never the caller's cwd
+      // alone), so accidental packaging never lands under packages/*/dist.
+      const raw = argv[++i];
+      out.outDir = raw.startsWith("/") || /^[A-Za-z]:[\\/]/.test(raw)
+        ? resolve(raw)
+        : resolve(REPO_ROOT, raw);
+    }
     else if (a === "--skip-node") out.skipNode = true;
     else if (a === "--help" || a === "-h") {
       console.log(
