@@ -11,6 +11,7 @@ Language support for **Sonite** (`.sn` files).
 - Signature help, code actions, organize imports
 - Semantic highlighting
 - Document formatting
+- Debug adapter integration (LLDB backend)
 
 The extension **bundles** the Sonite language server and standard library. You do
 not need the `sn` CLI installed for editor features.
@@ -22,13 +23,14 @@ you want to build and run projects from the terminal (`sn build`, `sn run`, …)
 
 ### Marketplace
 
-Search for **Sonite** in the Extensions view, or install the published VSIX from
-the Visual Studio Marketplace (publisher `sonite`).
+Search for **Sonite** in the Extensions view, or install from the Visual Studio
+Marketplace (publisher `sonite`).
 
 ### From a VSIX
 
 ```bash
-code --install-extension sonite-vscode-0.1.0.vsix
+pnpm --filter sonite-vscode package
+code --install-extension packages/vscode/sonite-vscode-1.0.0.vsix
 ```
 
 ### Development (monorepo)
@@ -42,6 +44,12 @@ pnpm --filter sonite-vscode build
 
 2. Run **Launch SN Extension** (F5), or
    **Developer: Install Extension from Location…** → `packages/vscode`.
+
+## Screenshots
+
+Add Marketplace gallery images under `images/` (editor with diagnostics,
+completions, and debug session) when capturing for publication. The extension
+icon is `images/icon.png`.
 
 ## Troubleshooting
 

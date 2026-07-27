@@ -561,6 +561,9 @@ static void test_gc_map_keeps_entries(void) {
   void *val = sn_alloc(16);
   sn_gc_set_type(val, 0);
   sn_map_set(map, key, val);
+  /* sn_map_set copies the key; the caller's buffer is not retained. */
+  key = NULL;
+  sn_gc_collect();
 
   int64_t mid = sn_gc_bytes_allocated();
   sn_gc_collect();

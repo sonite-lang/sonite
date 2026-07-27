@@ -35,9 +35,34 @@ Benchmark output is written to `scripts/benchmarks/` and is **not committed** (s
 | `hello.sn cold compile + run` | Clean build dir, compile and run Hello World |
 | `hello.sn warm compile + run` | Repeat compile + run with warm artifacts |
 | `modules project compile + run` | Multi-file project under `examples/modules/` |
+| `large multi-file compile + run` | Several heavier examples (collections, classes, generics) |
 | `async-concurrent.sn compile + run` | Async task scheduling smoke |
+| `async throughput (sleep tasks)` | Async sleep/task completion proxy |
+| `CLI --version` / `CLI --help` | CLI process startup |
+| `runtime startup (hello binary)` | Minimal program time-to-exit |
+| `path-dep install (consumer fixture)` | `sn install` on `examples/packages/consumer` |
+| `GC churn proxy (std-collections)` | Allocation-heavy stdlib exercise |
 
 Configuration: [benched.config.ts](../benched.config.ts) at the repo root.
+
+## Sample baselines (Linux x64)
+
+Recorded on a development Linux x64 host (2026-07-27, `pnpm benchmark`):
+
+| Benchmark | Median (approx.) |
+|-----------|------------------|
+| CLI `--version` | ~58 ms |
+| CLI `--help` | ~60 ms |
+| hello cold/warm compile+run | ~105–108 ms |
+| modules compile+run | ~108 ms |
+| large multi-file compile+run | ~337 ms |
+| async-concurrent | ~157 ms |
+| async sleep throughput proxy | ~129 ms |
+| runtime startup (hello) | ~109 ms |
+| path-dep install (consumer) | ~66 ms |
+| GC churn proxy (std-collections) | ~120 ms |
+
+Absolute times vary by machine — use these as order-of-magnitude anchors, not hard gates. Re-run `pnpm benchmark` after toolchain changes and compare with `benched compare`.
 
 ## Interpreting results
 
@@ -45,12 +70,11 @@ Benched reports mean, median, min, max, standard deviation, and ops/s per benchm
 
 ## Future coverage
 
-Additional benchmarks may cover:
+Additional instrumentation may cover:
 
-- Peak compiler memory
-- GC / allocation throughput
-- TCP/HTTP/HTTPS throughput
-- Package manager resolve/install at scale
+- Peak compiler RSS / precise GC pause histograms
+- TCP/HTTP/HTTPS throughput at scale
+- Package manager resolve/install against a live registry at scale
 - Release profile (`--release`) compile times
 
 Track planned work in [KNOWN_ISSUES.md](../KNOWN_ISSUES.md).

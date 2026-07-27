@@ -58,3 +58,10 @@ progress.md
 # Benchmark output (generated locally)
 scripts/benchmarks/benched-results*.json
 scripts/benchmarks/results.json
+
+.cache/
+dist/release/
+*.vsix
+
+# Local Sonite install leftovers (never commit)
+credentials.json

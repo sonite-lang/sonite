@@ -8,7 +8,8 @@
     "sn": "./dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "package.json"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -48,5 +49,8 @@
   "bugs": {
     "url": "https://github.com/ethan-davies/sonite/issues"
   },
-  "homepage": "https://github.com/ethan-davies/sonite/tree/main/packages/cli"
+  "homepage": "https://github.com/ethan-davies/sonite/tree/main/packages/cli",
+  "publishConfig": {
+    "access": "public"
+  }
 }

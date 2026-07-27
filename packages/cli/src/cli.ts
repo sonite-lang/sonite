@@ -23,13 +23,15 @@ import { runRun } from "./commands/run.js";
 import { runTree } from "./commands/tree.js";
 import { reportInternalError } from "./crash-report.js";
 import { isInternalError } from "@sonite/compiler";
+import { CLI_VERSION } from "./version.js";
+import { runSelfUpdate } from "./commands/self-update.js";
 
 const program = new Command();
 
 program
   .name("sn")
   .description("Compile and run Sonite (.sn) programs")
-  .version("1.0.0");
+  .version(CLI_VERSION);
 
 program
   .command("init")
@@ -278,6 +280,22 @@ program
   .argument("[package]", "update only this package")
   .action(async (pkg: string | undefined) => {
     process.exitCode = await runUpdate(pkg);
+  });
+
+program
+  .command("self-update")
+  .description("Update the standalone Sonite toolchain (not project dependencies)")
+  .option("--version <version>", "install a specific release version")
+  .option("--check", "check for updates without installing", false)
+  .action(async (options: { version?: string; check?: boolean }) => {
+    const opts: { version?: string; checkOnly?: boolean } = {};
+    if (options.version !== undefined) {
+      opts.version = options.version;
+    }
+    if (options.check) {
+      opts.checkOnly = true;
+    }
+    process.exitCode = await runSelfUpdate(opts);
   });
 
 program

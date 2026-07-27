@@ -1,7 +1,6 @@
 {
   "name": "@sonite/debug-adapter",
   "version": "1.0.0",
-  "private": true,
   "description": "Sonite Debug Adapter Protocol server",
   "license": "MIT",
   "type": "module",
@@ -12,6 +11,9 @@
   "exports": {
     ".": "./dist/main.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "clean": "rm -rf dist",
@@ -26,5 +28,17 @@
     "@types/node": "^22.15.30",
     "typescript": "^5.8.3",
     "vitest": "^3.2.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ethan-davies/sonite.git",
+    "directory": "packages/debug-adapter"
+  },
+  "bugs": {
+    "url": "https://github.com/ethan-davies/sonite/issues"
+  },
+  "homepage": "https://github.com/ethan-davies/sonite/tree/main/packages/debug-adapter",
+  "publishConfig": {
+    "access": "public"
   }
 }

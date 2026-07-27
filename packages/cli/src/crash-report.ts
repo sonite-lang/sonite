@@ -12,11 +12,12 @@ import { join } from "node:path";
 import { InternalError, isInternalError } from "@sonite/compiler";
 import { getDefaultTriple, hostPlatformId } from "@sonite/llvm";
 import { getCrashesDir } from "./config.js";
+import { CLI_VERSION } from "./version.js";
 
 export const ISSUE_TRACKER_URL =
   "https://github.com/ethan-davies/sonite/issues";
 
-const COMPILER_VERSION = "1.0.0";
+const COMPILER_VERSION = CLI_VERSION;
 
 export type CrashKind = "compiler" | "runtime" | "native";
 
@@ -58,21 +59,39 @@ export interface CrashReportResult {
   readonly document: CrashReportDocument;
 }
 
+function redactSecrets(text: string): string {
+  let out = text;
+  // Bearer / raw registry tokens that may appear in error strings.
+  out = out.replace(
+    /Bearer\s+[A-Za-z0-9._~\-+/=]+/gi,
+    "Bearer [REDACTED]",
+  );
+  out = out.replace(
+    /SN_REGISTRY_TOKEN[=:]\s*\S+/gi,
+    "SN_REGISTRY_TOKEN=[REDACTED]",
+  );
+  out = out.replace(
+    /("token"\s*:\s*")[^"]+(")/gi,
+    "$1[REDACTED]$2",
+  );
+  return out;
+}
+
 function stackOf(error: unknown): string | undefined {
   if (error instanceof Error && error.stack) {
-    return error.stack;
+    return redactSecrets(error.stack);
   }
   if (error instanceof Error && error.cause instanceof Error && error.cause.stack) {
-    return error.cause.stack;
+    return redactSecrets(error.cause.stack);
   }
   return undefined;
 }
 
 function messageOf(error: unknown): string {
   if (error instanceof Error) {
-    return error.message;
+    return redactSecrets(error.message);
   }
-  return String(error);
+  return redactSecrets(String(error));
 }
 
 function phaseOf(error: unknown, fallback?: string): string {

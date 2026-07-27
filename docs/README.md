@@ -6,8 +6,9 @@ Sonite is a statically typed language with TypeScript-inspired syntax that compi
 
 ## Getting started
 
-- [Installation](installation.md) — install the `sn` CLI
-- [Getting started](getting-started.md) — Hello World, projects, build, run, format
+- [Installation](installation.md) — standalone installer or npm
+- [Getting started](getting-started.md) — Hello World, first project, build, run, format
+- [Guides](guides/README.md) — CLI, files, HTTP, packages, FFI, debugging, VS Code
 
 ## Language
 
@@ -50,6 +51,7 @@ Sonite is a statically typed language with TypeScript-inspired syntax that compi
 - [Versioning and compatibility](versioning.md)
 - [Migration guide](migration.md)
 - [Performance baselines](performance-baselines.md)
+- [Release process](release.md)
 
 ## Security
 

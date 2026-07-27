@@ -66,6 +66,14 @@ Errors print to stderr with `error:` prefix or structured compiler diagnostics.
 |---------|-------------|
 | `sn cache clean` | Clear native artifact cache |
 
+### Toolchain
+
+| Command | Description |
+|---------|-------------|
+| `sn self-update` | Update standalone install from GitHub Releases |
+| `sn self-update --check` | Check for a newer release without installing |
+| `sn self-update --version <ver>` | Install a specific release |
+
 ## Experimental / internal commands
 
 | Command | Description |

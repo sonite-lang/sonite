@@ -120,6 +120,17 @@ import { helper } from "./utils";
 export function publicApi(): void { ... }
 ```
 
+## Packages
+
+Declare dependencies in `project.toml`, then:
+
+```bash
+sn add some-package
+sn install
+```
+
+See [packages.md](packages.md) and [guides/use-package.md](guides/use-package.md).
+
 ## Standard library
 
 Import explicit modules:

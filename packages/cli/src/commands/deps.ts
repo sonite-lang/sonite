@@ -31,16 +31,12 @@ import {
 } from "../registry/packages.js";
 
 function printError(error: unknown): void {
-  if (
+  const message =
     error instanceof ResolveError ||
     error instanceof NativeResolveError ||
-    error instanceof NativeIntegrityError
-  ) {
-    console.error(error.message);
-    return;
-  }
-  const message =
-    error instanceof ProjectError || error instanceof RegistryError
+    error instanceof NativeIntegrityError ||
+    error instanceof ProjectError ||
+    error instanceof RegistryError
       ? error.message
       : error instanceof Error
         ? error.message

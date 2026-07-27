@@ -17,7 +17,8 @@
     "test:fuzz:long": "pnpm --filter @sonite/compiler test:fuzz:long",
     "test:watch": "pnpm --filter @sonite/compiler test:watch",
     "test:coverage": "pnpm --filter @sonite/compiler test:coverage",
-    "benchmark": "pnpm --filter @sonite/cli build && benched run --no-ui scripts/benchmarks/toolchain.bench.ts"
+    "benchmark": "pnpm --filter @sonite/cli build && benched run --no-ui scripts/benchmarks/toolchain.bench.ts",
+    "pack:toolchain": "node scripts/release/pack-toolchain.mjs"
   },
   "engines": {
     "node": ">=20",

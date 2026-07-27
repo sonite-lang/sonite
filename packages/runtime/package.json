@@ -20,6 +20,10 @@
     "build": "tsc -p tsconfig.build.json && make && node ./dist/install-prebuilt.js",
     "clean": "rm -rf dist && make clean",
     "test": "make test",
+    "test:stress": "make test-stress",
+    "test:asan": "make test-asan",
+    "test:ubsan": "make test-ubsan",
+    "test:lsan": "make test-lsan",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prebuilt:install": "tsc -p tsconfig.build.json && node ./dist/install-prebuilt.js"
   },

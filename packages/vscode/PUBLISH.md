@@ -26,7 +26,7 @@ Smoke-test:
 
 ```bash
 # VS Code / Cursor: Extensions → … → Install from VSIX…
-code --install-extension packages/vscode/sonite-vscode-0.1.0.vsix
+code --install-extension packages/vscode/sonite-vscode-1.0.0.vsix
 ```
 
 Open a `.sn` file and confirm Output → Sonite shows the server starting.
@@ -45,13 +45,13 @@ npx vsce publish
 Or publish an already-built VSIX:
 
 ```bash
-npx vsce publish --packagePath sonite-vscode-0.1.0.vsix
+npx vsce publish --packagePath sonite-vscode-1.0.0.vsix
 ```
 
 ## Open VSX (optional)
 
 ```bash
-npx ovsx publish sonite-vscode-0.1.0.vsix -p <open-vsx-token>
+npx ovsx publish sonite-vscode-1.0.0.vsix -p <open-vsx-token>
 ```
 
 ## Version bumps

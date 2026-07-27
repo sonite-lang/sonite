@@ -1,0 +1,164 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to pack (without v prefix). Defaults to package.json version."
+        required: false
+        type: string
+      upload_release:
+        description: "Create/update a GitHub Release and upload assets"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+env:
+  SONITE_BUNDLE_FROM_SYSTEM: "0"
+  NODE_VERSION: "20"
+
+jobs:
+  pack:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x64
+            os: ubuntu-latest
+          - platform: linux-arm64
+            os: ubuntu-24.04-arm
+          - platform: macos-arm64
+            os: macos-14
+          - platform: macos-x64
+            os: macos-13
+          - platform: win32-x64
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - name: Install deps
+        run: pnpm install
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: |
+          if [[ -n "${{ github.event.inputs.version }}" ]]; then
+            V="${{ github.event.inputs.version }}"
+          elif [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            V="${GITHUB_REF_NAME#v}"
+          else
+            V="$(node -p "require('./package.json').version")"
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Packing Sonite $V for ${{ matrix.platform }}"
+      - name: Build native toolchain
+        run: pnpm build:native
+        shell: bash
+      - name: Fetch bundled OpenSSL
+        run: pnpm --filter @sonite/runtime openssl
+        shell: bash
+        continue-on-error: ${{ matrix.platform == 'win32-x64' }}
+      - name: Build packages (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          pnpm --filter @sonite/compiler build
+          pnpm --filter @sonite/llvm build:ts
+          pnpm --filter @sonite/runtime build
+          pnpm --filter @sonite/std build
+          pnpm --filter @sonite/debug-adapter build
+          pnpm --filter @sonite/cli build
+      - name: Build packages (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          pnpm --filter @sonite/compiler build
+          pnpm --filter @sonite/llvm build:ts
+          pnpm --filter @sonite/runtime exec tsc -p tsconfig.build.json
+          cd packages/runtime && make -f Makefile.win
+          node dist/install-prebuilt.js
+          pnpm --filter @sonite/std build
+          pnpm --filter @sonite/debug-adapter build
+          pnpm --filter @sonite/cli build
+      - name: Pack toolchain
+        shell: bash
+        run: |
+          node scripts/release/pack-toolchain.mjs \
+            --platform "${{ matrix.platform }}" \
+            --version "${{ steps.ver.outputs.version }}" \
+            --out dist/release
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: sonite-${{ steps.ver.outputs.version }}-${{ matrix.platform }}
+          path: |
+            dist/release/sonite-*-${{ matrix.platform }}.tar.gz
+            dist/release/sonite-*-${{ matrix.platform }}.tar.gz.sha256
+            dist/release/sonite-*-${{ matrix.platform }}.tar.gz.json
+          if-no-files-found: error
+
+  publish:
+    needs: pack
+    if: github.event_name == 'push' || inputs.upload_release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: |
+          if [[ -n "${{ github.event.inputs.version }}" ]]; then
+            V="${{ github.event.inputs.version }}"
+          elif [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            V="${GITHUB_REF_NAME#v}"
+          else
+            V="$(node -p "require('./package.json').version")"
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "tag=v$V" >> "$GITHUB_OUTPUT"
+      - name: Download all pack artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: dist/release-artifacts
+      - name: Assemble release assets
+        shell: bash
+        run: |
+          mkdir -p dist/release
+          find dist/release-artifacts -type f \( -name '*.tar.gz' -o -name '*.sha256' -o -name '*.json' \) \
+            -exec cp -f {} dist/release/ \;
+          cd dist/release
+          : > SHA256SUMS
+          for f in *.tar.gz; do
+            [[ -f "$f" ]] || continue
+            if [[ -f "${f}.sha256" ]]; then
+              cat "${f}.sha256" >> SHA256SUMS
+            else
+              sha256sum "$f" >> SHA256SUMS
+            fi
+          done
+          ls -la
+          cat SHA256SUMS
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: Sonite ${{ steps.ver.outputs.version }}
+          draft: false
+          prerelease: ${{ contains(steps.ver.outputs.version, '-') }}
+          generate_release_notes: true
+          files: |
+            dist/release/*.tar.gz
+            dist/release/*.sha256
+            dist/release/SHA256SUMS
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

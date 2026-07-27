@@ -32,6 +32,17 @@ If you suspect a malicious registry package:
 
 Lockfiles may record `publishedBy` and `publishedAt` when the registry provides them. Use `sn tree` to inspect the dependency graph.
 
+## Supply-chain risks
+
+Sonite itself depends on:
+
+- **npm packages** for the Node CLI (commander, tar, semver, …) — review `pnpm-lock.yaml` and prefer `pnpm audit` in the monorepo before releases
+- **Pinned LLVM/LLD** downloads (see `packages/llvm/scripts/llvm-version.json`) with checksum validation in fetch scripts
+- **Bundled OpenSSL** static libraries fetched by the runtime build
+- **Registry packages** consumed by end users — integrity is enforced via `project.lock` SHA-256 hashes
+
+Before cutting a release, confirm lockfiles are committed, LLVM/OpenSSL pins are intentional, and no unexpected new native download URLs were introduced.
+
 ## Response process
 
 Security reports receive acknowledgment within 48 hours per [SECURITY.md](../../SECURITY.md). Patches ship in patch releases when applicable.

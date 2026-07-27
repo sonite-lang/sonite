@@ -11,61 +11,56 @@ import { join } from "node:path";
 
 export const DEFAULT_REGISTRY_URL = "https://api-sonite.ethann.dev";
 
-/** App directory name for user-facing paths (config, cache). */
-export const APP_DIR_NAME = "sonite";
+/** Root directory name under the user home (`~/.sonite`). */
+export const APP_DIR_NAME = ".sonite";
+
+export const DEFAULT_GITHUB_REPO = "ethan-davies/sonite";
 
 export interface Credentials {
   readonly token: string;
   readonly username?: string;
 }
 
-/** Cross-platform user config directory (`~/.config/sonite`, etc.). */
+/**
+ * Sonite home directory (`~/.sonite` on all platforms).
+ * Override with `SONITE_HOME`.
+ */
+export function getSoniteHome(): string {
+  const override = process.env.SONITE_HOME?.trim();
+  if (override) {
+    return override;
+  }
+  return join(homedir(), APP_DIR_NAME);
+}
+
+/** User config directory (`~/.sonite/config`). Override with `SN_CONFIG_DIR`. */
 export function getConfigDir(): string {
-  if (process.platform === "darwin") {
-    return join(homedir(), "Library", "Application Support", APP_DIR_NAME);
+  const override = process.env.SN_CONFIG_DIR?.trim();
+  if (override) {
+    return override;
   }
-  if (process.platform === "win32") {
-    const appData = process.env.APPDATA?.trim();
-    return join(
-      appData || join(homedir(), "AppData", "Roaming"),
-      APP_DIR_NAME,
-    );
-  }
-  const xdg = process.env.XDG_CONFIG_HOME?.trim();
-  return join(xdg || join(homedir(), ".config"), APP_DIR_NAME);
+  return join(getSoniteHome(), "config");
 }
 
 /**
- * Cross-platform cache directory (`~/.cache/sonite`, etc.).
- * Override with `SN_CACHE_DIR` (compact env name).
+ * Cache directory (`~/.sonite/cache`).
+ * Override with `SN_CACHE_DIR`.
  */
 export function getCacheDir(): string {
   const override = process.env.SN_CACHE_DIR?.trim();
   if (override) {
     return override;
   }
-  if (process.platform === "darwin") {
-    return join(homedir(), "Library", "Caches", APP_DIR_NAME);
-  }
-  if (process.platform === "win32") {
-    const local = process.env.LOCALAPPDATA?.trim();
-    return join(
-      local || join(homedir(), "AppData", "Local"),
-      APP_DIR_NAME,
-      "Cache",
-    );
-  }
-  const xdg = process.env.XDG_CACHE_HOME?.trim();
-  return join(xdg || join(homedir(), ".cache"), APP_DIR_NAME);
+  return join(getSoniteHome(), "cache");
 }
 
-/** Global registry package store: `<config>/packages`. */
+/** Global registry package store: `~/.sonite/config/packages`. */
 export function getPackagesStoreDir(): string {
   return join(getConfigDir(), "packages");
 }
 
 /**
- * Crash report directory (`~/.sonite/crashes` on all platforms).
+ * Crash report directory (`~/.sonite/crashes`).
  * Override with `SN_CRASHES_DIR`.
  */
 export function getCrashesDir(): string {
@@ -73,7 +68,17 @@ export function getCrashesDir(): string {
   if (override) {
     return override;
   }
-  return join(homedir(), ".sonite", "crashes");
+  return join(getSoniteHome(), "crashes");
+}
+
+/** Installed toolchains directory (`~/.sonite/toolchains`). */
+export function getToolchainsDir(): string {
+  return join(getSoniteHome(), "toolchains");
+}
+
+/** Symlink/wrapper directory (`~/.sonite/bin`). */
+export function getBinDir(): string {
+  return join(getSoniteHome(), "bin");
 }
 
 export function getRegistryUrl(): string {
@@ -82,6 +87,15 @@ export function getRegistryUrl(): string {
     return override.replace(/\/$/, "");
   }
   return DEFAULT_REGISTRY_URL;
+}
+
+/** GitHub repo used for standalone release downloads (`owner/name`). */
+export function getGithubRepo(): string {
+  const override = process.env.SONITE_GITHUB_REPO?.trim();
+  if (override) {
+    return override.replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, "");
+  }
+  return DEFAULT_GITHUB_REPO;
 }
 
 function credentialsPath(): string {

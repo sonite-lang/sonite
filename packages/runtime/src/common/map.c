@@ -40,7 +40,7 @@ void sn_map_set(void *map, const char *key, void *val) {
     map_grow(header);
   }
 
-  header->keys[header->len] = (char *)key;
+  header->keys[header->len] = sn_str_concat(key, "");
   header->vals[header->len] = val;
   header->len += 1;
 }

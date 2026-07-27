@@ -1,54 +1,83 @@
 # Installation
 
-## Requirements
+## Supported platforms
 
-- **Node.js** 20 or later
-- **Supported OS/arch:** Linux x64/ARM64, macOS x64/ARM64, Windows x64
+- Linux x64 / ARM64
+- macOS x64 / ARM64
+- Windows x64
 
-You do **not** need system LLVM, Clang, LLD, or OpenSSL installed. The Sonite toolchain bundles native LLVM libraries and links the runtime automatically.
+Windows ARM64 is not supported. You do **not** need system LLVM, Clang, LLD, or OpenSSL — the toolchain bundles them.
 
-Windows ARM64 is not supported.
+## Standalone installer (recommended)
 
-## Install from npm
-
-```bash
-npm install -g @sonite/cli
-```
-
-Or add as a project dependency:
+### Unix (Linux / macOS)
 
 ```bash
-npm install @sonite/cli
-npx sn --version
+curl -fsSL https://sonite.dev/install.sh | sh
 ```
 
-## Verify installation
+Or from this repository (after a GitHub Release exists):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ethan-davies/sonite/main/scripts/install.sh | \
+  SONITE_VERSION=1.0.0 sh
+```
+
+The installer downloads a platform tarball, verifies SHA-256, and installs under `~/.sonite/` without root.
+
+### Windows (PowerShell)
+
+```powershell
+irm https://sonite.dev/install.ps1 | iex
+```
+
+Installs to `%USERPROFILE%\.sonite\` and updates the user `PATH`.
+
+### Verify
+
+Open a new terminal:
 
 ```bash
 sn --version
 ```
 
-## Platform packages
+### Layout
 
-`@sonite/cli` depends on `@sonite/llvm`, which automatically selects the correct platform native package:
+```text
+~/.sonite/
+├── bin/sn
+├── toolchains/
+├── cache/
+├── config/
+└── crashes/
+```
 
-| Platform | Package |
-|----------|---------|
-| Linux x64 | `@sonite/llvm-linux-x64` |
-| Linux ARM64 | `@sonite/llvm-linux-arm64` |
-| macOS x64 | `@sonite/llvm-macos-x64` |
-| macOS ARM64 | `@sonite/llvm-macos-arm64` |
-| Windows x64 | `@sonite/llvm-win32-x64` |
+Update later with:
 
-If your platform is unsupported, `sn` prints a diagnostic explaining which targets are available.
+```bash
+sn self-update
+```
+
+Environment overrides: `SONITE_HOME`, `SONITE_VERSION`, `SONITE_RELEASE_BASE`, `SONITE_GITHUB_REPO`, `SONITE_MODIFY_PATH=0`.
+
+## Install from npm (optional)
+
+Requires Node.js 20+:
+
+```bash
+npm install -g @sonite/cli
+sn --version
+```
+
+`@sonite/cli` pulls the matching `@sonite/llvm-<platform>` optional dependency.
 
 ## VS Code extension
 
-Install **Sonite** from the VS Code Marketplace, or build from source:
+Install **Sonite** from the Marketplace, or:
 
 ```bash
 cd packages/vscode
-pnpm install && pnpm build
+pnpm install && pnpm package
 code --install-extension sonite-vscode-*.vsix
 ```
 
@@ -56,20 +85,23 @@ See [tooling/vscode.md](tooling/vscode.md).
 
 ## Uninstall
 
+Standalone:
+
+```bash
+rm -rf ~/.sonite
+# remove PATH entry from your shell profile if added by the installer
+```
+
+npm:
+
 ```bash
 npm uninstall -g @sonite/cli
 ```
 
-Local cache (native artifacts, registry tokens, crash reports) lives in `~/.sonite/`. Remove manually if desired:
-
-```bash
-rm -rf ~/.sonite
-```
-
 ## Offline use
 
-After installation, `sn build` and `sn run` work offline. Package install/publish requires network access to the registry.
+After installation, `sn build` and `sn run` work offline. Package install/publish needs the registry.
 
 ## Next steps
 
-[Getting started](getting-started.md)
+[Getting started](getting-started.md) · [Release process](release.md)

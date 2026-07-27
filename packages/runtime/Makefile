@@ -52,8 +52,12 @@ ASYNC_SMOKE_BIN := $(DIST_DIR)/async_smoke
 TLS_SMOKE_BIN := $(DIST_DIR)/tls_smoke
 DEBUG_SMOKE_BIN := $(DIST_DIR)/debug_smoke
 NET_EXTRAS_SMOKE_BIN := $(DIST_DIR)/net_extras_smoke
+GC_STRESS_BIN := $(DIST_DIR)/gc_stress
+ASYNC_STRESS_BIN := $(DIST_DIR)/async_stress
+EXCEPTION_STRESS_BIN := $(DIST_DIR)/exception_stress
+CLEANUP_STRESS_BIN := $(DIST_DIR)/cleanup_stress
 
-.PHONY: all clean test openssl
+.PHONY: all clean test openssl test-stress test-asan test-ubsan test-lsan
 
 all: $(LIBRARY)
 
@@ -86,12 +90,52 @@ $(DEBUG_SMOKE_BIN): $(TEST_DIR)/debug_smoke.c $(LIBRARY)
 $(NET_EXTRAS_SMOKE_BIN): $(TEST_DIR)/net_extras_smoke.c $(LIBRARY)
 	$(CC) $(CFLAGS) $< $(LIBRARY) -lm -lpthread $(OPENSSL_LIBS) -o $@
 
+$(GC_STRESS_BIN): $(TEST_DIR)/stress/gc_stress.c $(LIBRARY)
+	$(CC) $(CFLAGS) $< $(LIBRARY) -lm -lpthread $(OPENSSL_LIBS) -o $@
+
+$(ASYNC_STRESS_BIN): $(TEST_DIR)/stress/async_stress.c $(LIBRARY)
+	$(CC) $(CFLAGS) $< $(LIBRARY) -lm -lpthread $(OPENSSL_LIBS) -o $@
+
+$(EXCEPTION_STRESS_BIN): $(TEST_DIR)/stress/exception_stress.c $(LIBRARY)
+	$(CC) $(CFLAGS) $< $(LIBRARY) -lm -lpthread $(OPENSSL_LIBS) -o $@
+
+$(CLEANUP_STRESS_BIN): $(TEST_DIR)/stress/cleanup_stress.c $(LIBRARY)
+	$(CC) $(CFLAGS) $< $(LIBRARY) -lm -lpthread $(OPENSSL_LIBS) -o $@
+
 test: $(SMOKE_BIN) $(ASYNC_SMOKE_BIN) $(TLS_SMOKE_BIN) $(NET_EXTRAS_SMOKE_BIN) $(DEBUG_SMOKE_BIN)
 	./$(SMOKE_BIN)
 	./$(ASYNC_SMOKE_BIN)
 	./$(TLS_SMOKE_BIN)
 	./$(NET_EXTRAS_SMOKE_BIN)
 	./$(DEBUG_SMOKE_BIN)
+
+test-stress: $(GC_STRESS_BIN) $(ASYNC_STRESS_BIN) $(EXCEPTION_STRESS_BIN) $(CLEANUP_STRESS_BIN)
+	./$(GC_STRESS_BIN)
+	./$(ASYNC_STRESS_BIN)
+	./$(EXCEPTION_STRESS_BIN)
+	./$(CLEANUP_STRESS_BIN)
+
+# Rebuild the library + smoke suite under AddressSanitizer (Linux/macOS).
+test-asan:
+	$(MAKE) clean
+	$(MAKE) CFLAGS="$(CFLAGS) -O1 -g -fsanitize=address -fno-omit-frame-pointer" \
+		LDFLAGS="-fsanitize=address" test
+	$(MAKE) CFLAGS="$(CFLAGS) -O1 -g -fsanitize=address -fno-omit-frame-pointer" \
+		test-stress
+
+test-ubsan:
+	$(MAKE) clean
+	$(MAKE) CFLAGS="$(CFLAGS) -O1 -g -fsanitize=undefined -fno-sanitize-recover=undefined" \
+		LDFLAGS="-fsanitize=undefined" test
+	$(MAKE) CFLAGS="$(CFLAGS) -O1 -g -fsanitize=undefined -fno-sanitize-recover=undefined" \
+		test-stress
+
+# LeakSanitizer is typically bundled with ASAN on Linux (detect_leaks=1).
+test-lsan:
+	$(MAKE) clean
+	ASAN_OPTIONS=detect_leaks=1 $(MAKE) \
+		CFLAGS="$(CFLAGS) -O1 -g -fsanitize=address -fno-omit-frame-pointer" \
+		LDFLAGS="-fsanitize=address" test
 
 clean:
 	rm -rf $(DIST_DIR)
