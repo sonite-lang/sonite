@@ -239,6 +239,11 @@ Napi::Value BackendTarget(const Napi::CallbackInfo &info) {
       config.Has("codeModel") && config.Get("codeModel").IsString()
           ? config.Get("codeModel").As<Napi::String>().Utf8Value()
           : "default";
+  const bool framePointers =
+      (config.Has("framePointers") && config.Get("framePointers").IsBoolean() &&
+       config.Get("framePointers").As<Napi::Boolean>().Value()) ||
+      (config.Has("framePointers") && config.Get("framePointers").IsString() &&
+       config.Get("framePointers").As<Napi::String>().Utf8Value() == "true");
   if (framePointers) {
     if (features.empty()) {
       features = "+frame-pointer";
