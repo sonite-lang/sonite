@@ -1,0 +1,11 @@
+[package]
+name = "greet-consumer"
+version = "1.0.0"
+description = "Example consumer using a path dependency"
+entry = "src/main.sn"
+
+[dependencies]
+greet-lib = { path = "../greet-lib" }
+
+[build]
+outdir = "build"

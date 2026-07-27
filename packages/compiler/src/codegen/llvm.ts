@@ -8560,7 +8560,7 @@ export class LlvmCodegen {
   }
 
   /**
-   * Top-level function used as a C `FnPtr`. Phase 5 passes the function
+   * Top-level function used as a C `FnPtr`. Passes the function
    * address directly — callbacks must not throw across the FFI boundary
    * (no exception-barrier wrapper yet).
    */

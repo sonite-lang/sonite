@@ -90,7 +90,7 @@ Examples: `sn_str_contains`, `sn_array_length`, `sn_gc_alloc`, `sn_task_await_su
 
 These are **compiler/runtime implementation details**, not a public package API. User Sonite code should not declare `extern function sn_…` against the runtime — use the standard library wrappers instead.
 
-**Public FFI** (Phase 5) is separate: user-written `extern function` declarations plus `[native]` libraries in `project.toml`. See [docs/ffi.md](../../docs/ffi.md).
+**Public FFI** is separate: user-written `extern function` declarations plus `[native]` libraries in `project.toml`. See [docs/ffi.md](../../docs/ffi.md).
 
 | | Internal runtime ABI | Public FFI |
 | --- | --- | --- |

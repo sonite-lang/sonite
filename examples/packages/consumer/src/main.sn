@@ -1,0 +1,7 @@
+import { greet, add, VERSION } from "greet-lib";
+
+function main(): void {
+    print(greet("Sonite"));
+    print(`Library version: ${VERSION}`);
+    print(`2 + 3 = ${add(2, 3)}`);
+}

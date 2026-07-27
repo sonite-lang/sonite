@@ -43,6 +43,22 @@ jobs:
         run: pnpm --filter @sonite/llvm test && pnpm --filter @sonite/cli exec vitest run tests/native-toolchain.test.ts
       - name: Runtime smoke tests
         run: pnpm --filter @sonite/runtime test
+      - name: LSP tests
+        run: |
+          pnpm --filter @sonite/lsp build
+          pnpm --filter @sonite/lsp test
+      - name: Debug adapter tests
+        run: |
+          pnpm --filter @sonite/debug-adapter build
+          pnpm --filter @sonite/debug-adapter test
+      - name: Full CLI tests
+        run: pnpm --filter @sonite/cli test
+      - name: VS Code extension tests
+        run: |
+          pnpm --filter sonite-vscode build
+          pnpm --filter sonite-vscode test
+      - name: Format check examples
+        run: pnpm --filter @sonite/cli exec sn fmt --check examples/
       - name: Async / net / TLS / HTTP e2e
         run: pnpm --filter @sonite/cli exec vitest run tests/async-run.test.ts
       - name: FS / path e2e

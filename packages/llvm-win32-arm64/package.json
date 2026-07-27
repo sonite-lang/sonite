@@ -1,10 +1,23 @@
 {
   "name": "@sonite/llvm-win32-arm64",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Sonite LLVM/LLD native toolchain for win32-arm64 (deferred)",
   "license": "MIT",
   "type": "module",
   "main": "./index.js",
-  "files": ["index.js"],
-  "engines": { "node": ">=20" }
+  "files": [
+    "index.js"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ethan-davies/sonite.git",
+    "directory": "packages/llvm-win32-arm64"
+  },
+  "bugs": {
+    "url": "https://github.com/ethan-davies/sonite/issues"
+  },
+  "homepage": "https://github.com/ethan-davies/sonite/tree/main/packages/llvm-win32-arm64"
 }

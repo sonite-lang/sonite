@@ -1,0 +1,8 @@
+[package]
+name = "cli-app"
+version = "1.0.0"
+description = "CLI application example — parse args and subcommands"
+entry = "src/main.sn"
+
+[build]
+outdir = "build"

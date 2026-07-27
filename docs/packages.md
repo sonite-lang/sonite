@@ -99,7 +99,7 @@ Incremental compile caching is deferred; every `sn build` recompiles. Package an
 
 ## Workspaces
 
-Sonite multi-package workspaces are **deferred** past v1.0.0. Use path dependencies for related local packages.
+Sonite multi-package workspaces are **not supported**. Use path dependencies for related local packages.
 
 ## Registry & ownership
 

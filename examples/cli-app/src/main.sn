@@ -1,0 +1,44 @@
+import { args } from "std/process";
+
+function printUsage(): void {
+    print("Usage: cli-app [command]");
+    print("Commands:");
+    print("  greet [name]   Print a greeting");
+    print("  version        Print version");
+    print("  help           Show this help");
+}
+
+function cmdGreet(argv: string[]): void {
+    let name = "World";
+    if (argv.length > 0) {
+        name = argv[0];
+    }
+    print(`Hello, ${name}!`);
+}
+
+function cmdVersion(): void {
+    print("cli-app 1.0.0");
+}
+
+function main(): void {
+    let argv = args();
+    if (argv.length == 0) {
+        printUsage();
+        return;
+    }
+    let command = argv[0];
+    let rest: string[] = [];
+    for (let i = 1; i < argv.length; i = i + 1) {
+        rest.push(argv[i]);
+    }
+    if (command == "greet") {
+        cmdGreet(rest);
+    } elseif (command == "version") {
+        cmdVersion();
+    } elseif (command == "help") {
+        printUsage();
+    } else {
+        print(`Unknown command: ${command}`);
+        printUsage();
+    }
+}

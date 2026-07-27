@@ -1,6 +1,6 @@
 {
   "name": "sonite",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "A TypeScript-like language that compiles to native code via LLVM",
   "license": "MIT",
@@ -16,7 +16,8 @@
     "test:fuzz": "pnpm --filter @sonite/compiler test:fuzz",
     "test:fuzz:long": "pnpm --filter @sonite/compiler test:fuzz:long",
     "test:watch": "pnpm --filter @sonite/compiler test:watch",
-    "test:coverage": "pnpm --filter @sonite/compiler test:coverage"
+    "test:coverage": "pnpm --filter @sonite/compiler test:coverage",
+    "benchmark": "pnpm --filter @sonite/cli build && benched run --no-ui scripts/benchmarks/toolchain.bench.ts"
   },
   "engines": {
     "node": ">=20",
@@ -25,6 +26,7 @@
   "packageManager": "pnpm@10.33.0",
   "devDependencies": {
     "@types/node": "^22.15.30",
+    "benched-js": "^1.0.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   }

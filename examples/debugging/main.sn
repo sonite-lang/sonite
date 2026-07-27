@@ -1,4 +1,17 @@
+function helper(): i32 {
+    let x = 10;
+    let y = 20;
+    return x + y;
+}
+
+function compute(): i32 {
+    let base = helper();
+    return base * 2;
+}
+
 function main(): void {
-  const message = "Set a breakpoint on the next line"
-  print(message)
+    let message = "Set a breakpoint on the next line";
+    print(message);
+    let result = compute();
+    print(`Result: ${result}`);
 }

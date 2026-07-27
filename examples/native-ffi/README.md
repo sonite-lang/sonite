@@ -1,6 +1,6 @@
 # Native FFI example
 
-Demonstrates Phase 5 public FFI and package-local native linking:
+Demonstrates public FFI and package-local native linking:
 
 1. `extern function` with `@symbol`
 2. `@repr("C")` struct

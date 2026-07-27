@@ -30,3 +30,23 @@ Please include as much of the following information as possible to help us triag
 *   **Initial Response:** You will receive an acknowledgment of your report within 48 hours.
 *   **Updates:** We will keep you informed of our progress as we investigate and work on a fix.
 *   **Disclosure:** Once a resolution is applied, we will coordinate public disclosure as appropriate.
+
+## Dependency vulnerabilities
+
+*   Run `sn audit` to check locked dependencies against known advisories.
+*   Report toolchain/stdlib vulnerabilities through the channels above, not public issues.
+*   See [docs/security/dependencies.md](docs/security/dependencies.md) for the dependency response process.
+
+## Credentials and tokens
+
+*   Registry tokens (`sn login`, `SN_REGISTRY_TOKEN`) are stored locally and are **never** written to crash reports, compiler diagnostics, or logs.
+*   Use `sn logout` to revoke local tokens.
+*   Do not commit tokens to source control.
+
+## Native dependencies
+
+Review `[native]` metadata and bundled artifacts before linking third-party libraries. See [docs/security/ffi.md](docs/security/ffi.md).
+
+## Scope
+
+This policy covers the Sonite compiler, CLI, LSP, VS Code extension, standard library, and published npm packages. The registry **server** may be operated separately; report server-side issues to the same contact.

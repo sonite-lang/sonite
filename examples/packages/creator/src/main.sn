@@ -1,0 +1,7 @@
+export function double(n: i32): i32 {
+    return n * 2;
+}
+
+function main(): void {
+    print(`double(21) = ${double(21)}`);
+}

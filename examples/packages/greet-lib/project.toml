@@ -1,0 +1,8 @@
+[package]
+name = "greet-lib"
+version = "1.0.0"
+description = "Example library for package demos"
+entry = "src/lib.sn"
+
+[build]
+outdir = "build"

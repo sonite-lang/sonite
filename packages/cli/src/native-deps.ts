@@ -2,7 +2,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { hostRuntimePlatformId, type RuntimePlatformId } from "@sonite/runtime";
 
-/** Phase 5 supported native package targets (Windows ARM64 excluded). */
+/** Supported native package targets (Windows ARM64 excluded). */
 export const NATIVE_PACKAGE_TARGETS = [
   "linux-x64",
   "linux-arm64",
@@ -521,7 +521,7 @@ export function emptyNativeLinkSpec(): NativeLinkSpec {
   };
 }
 
-/** List platform dirs present under `native/` that are valid Phase 5 targets. */
+/** List platform dirs present under `native/` that are valid native package targets. */
 export function listBundledNativeTargets(projectRoot: string): string[] {
   const nativeRoot = join(projectRoot, "native");
   if (!existsSync(nativeRoot)) {

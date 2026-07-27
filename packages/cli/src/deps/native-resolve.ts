@@ -205,7 +205,7 @@ export function resolveNativeArtifacts(
   }
   if (platformId === "win32-arm64") {
     throw new NativeResolveError(
-      "Windows ARM64 is not a supported Phase 5 native package target.",
+      "Windows ARM64 is not a supported native package target.",
     );
   }
 

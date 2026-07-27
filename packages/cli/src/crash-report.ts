@@ -16,7 +16,7 @@ import { getCrashesDir } from "./config.js";
 export const ISSUE_TRACKER_URL =
   "https://github.com/ethan-davies/sonite/issues";
 
-const COMPILER_VERSION = "0.0.0";
+const COMPILER_VERSION = "1.0.0";
 
 export type CrashKind = "compiler" | "runtime" | "native";
 

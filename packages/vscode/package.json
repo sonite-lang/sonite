@@ -2,7 +2,7 @@
   "name": "sonite-vscode",
   "displayName": "Sonite",
   "description": "Language support for Sonite (.sn) — syntax highlighting, IntelliSense, and language server",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "license": "MIT",
   "author": "Ethan Davies",
   "publisher": "sonite",
@@ -81,10 +81,14 @@
       {
         "type": "sonite",
         "label": "Sonite",
-        "languages": ["sn"],
+        "languages": [
+          "sn"
+        ],
         "configurationAttributes": {
           "launch": {
-            "required": ["program"],
+            "required": [
+              "program"
+            ],
             "properties": {
               "program": {
                 "type": "string",
@@ -97,11 +101,16 @@
               },
               "args": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "profile": {
                 "type": "string",
-                "enum": ["debug", "release"],
+                "enum": [
+                  "debug",
+                  "release"
+                ],
                 "default": "debug"
               },
               "buildBeforeLaunch": {
@@ -116,7 +125,9 @@
             }
           },
           "attach": {
-            "required": ["processId"],
+            "required": [
+              "processId"
+            ],
             "properties": {
               "processId": {
                 "type": "number"

@@ -1,6 +1,6 @@
 {
   "name": "@sonite/llvm",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Pinned LLVM/LLD native binding for the Sonite toolchain",
   "license": "MIT",
   "type": "module",
@@ -50,5 +50,14 @@
     "@types/node": "^22.15.30",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ethan-davies/sonite.git",
+    "directory": "packages/llvm"
+  },
+  "bugs": {
+    "url": "https://github.com/ethan-davies/sonite/issues"
+  },
+  "homepage": "https://github.com/ethan-davies/sonite/tree/main/packages/llvm"
 }

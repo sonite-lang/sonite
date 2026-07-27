@@ -29,7 +29,7 @@ const program = new Command();
 program
   .name("sn")
   .description("Compile and run Sonite (.sn) programs")
-  .version("0.0.0");
+  .version("1.0.0");
 
 program
   .command("init")
@@ -168,7 +168,7 @@ crash
 
 program
   .command("debug-adapter")
-  .description("Start the Sonite debug adapter (DAP over stdio)")
+  .description("Start the Sonite debug adapter (DAP over stdio; internal)")
   .action(async () => {
     await import("@sonite/debug-adapter");
   });
@@ -200,7 +200,7 @@ program
 
 program
   .command("compile")
-  .description("Compile a .sn file (or project entry) to LLVM IR")
+  .description("Compile a .sn file (or project entry) to LLVM IR (experimental)")
   .argument("[input]", "path to a .sn source file (default: project entry)")
   .option(
     "-o, --output <file>",

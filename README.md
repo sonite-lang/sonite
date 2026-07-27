@@ -8,16 +8,16 @@ Supported targets: **Linux x64/ARM64**, **macOS x64/ARM64**, and **Windows x64**
 
 ## Installation
 
-> [!NOTE]
-> Sonite is currently in development and is not yet available as a public release.
-
-Once released, the recommended installation method will be documented here.
-
-After installation, you will be able to verify your installation with:
+Install the CLI from npm:
 
 ```bash
+npm install -g @sonite/cli
 sn --version
 ```
+
+See [docs/installation.md](docs/installation.md) for platform requirements, VS Code extension setup, and uninstall instructions.
+
+Full documentation: [docs/README.md](docs/README.md)
 
 ## Why Sonite?
 

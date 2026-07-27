@@ -1,0 +1,10 @@
+[package]
+name = "example-creator"
+version = "1.0.0"
+description = "Example publishable package layout"
+entry = "src/main.sn"
+license = "MIT"
+authors = ["Sonite Contributors"]
+
+[build]
+outdir = "build"

@@ -225,4 +225,28 @@ describe.runIf(isNativeBindingAvailable())("async sn run integration", () => {
     },
     30_000,
   );
+
+  it(
+    "runs cli-app greet subcommand",
+    async () => {
+      const code = await compileLinkAndRun(
+        join(examples, "cli-app", "src", "main.sn"),
+        ["greet", "Sonite"],
+      );
+      expect(code).toBe(0);
+    },
+    30_000,
+  );
+
+  it(
+    "runs debugging example",
+    async () => {
+      const code = await compileLinkAndRun(
+        join(examples, "debugging", "main.sn"),
+        [],
+      );
+      expect(code).toBe(0);
+    },
+    30_000,
+  );
 });

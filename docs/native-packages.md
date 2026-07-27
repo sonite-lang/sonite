@@ -82,7 +82,7 @@ package/
     └── win32-x64/          # `windows-x64` is accepted as an alias
 ```
 
-Supported Phase 5 targets: `linux-x64`, `linux-arm64`, `macos-x64`, `macos-arm64`, `win32-x64`. Windows ARM64 is unsupported; install fails early if the host target is missing.
+Supported native package targets: `linux-x64`, `linux-arm64`, `macos-x64`, `macos-arm64`, `win32-x64`. Windows ARM64 is unsupported; install fails early if the host target is missing.
 
 ## Static vs dynamic
 

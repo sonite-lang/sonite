@@ -54,3 +54,7 @@ pnpm-debug.log*
 
 # Local notes (not published)
 progress.md
+
+# Benchmark output (generated locally)
+scripts/benchmarks/benched-results*.json
+scripts/benchmarks/results.json
