@@ -2,3 +2,6 @@
 native/
 lib/
 BUILD_INFO.json
+
+# Copied from LLVM SDK by build:native
+bin/

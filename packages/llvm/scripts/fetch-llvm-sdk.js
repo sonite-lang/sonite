@@ -310,7 +310,7 @@ export async function ensureLlvmSdk(platformId = hostPlatformId()) {
     rmSync(cacheRoot, { recursive: true, force: true });
     mkdirSync(dirname(cacheRoot), { recursive: true });
     // cpSync handles cross-device moves (rename can throw EXDEV).
-    cpSync(extracted, cacheRoot, { recursive: true });
+    cpSync(extracted, cacheRoot, { recursive: true, dereference: true });
     rmSync(extracted, { recursive: true, force: true });
   } finally {
     rmSync(staging, { recursive: true, force: true });

@@ -59,7 +59,9 @@ function copySharedLibs(sdkLib, destLib) {
 
   const wanted = (name) =>
     /^(libLLVM|liblld)/.test(name) &&
-    (name.includes(".so") || name.endsWith(".dylib") || name.endsWith(".dll"));
+    (name.includes(".so") || name.endsWith(".dylib") || name.endsWith(".dll")) &&
+    // Skip LLDB debugger libs; we only ship libLLVM + LLD drivers.
+    !/^liblldb/i.test(name);
 
   let copied = 0;
   for (const entry of readdirSync(sdkLib)) {
@@ -71,7 +73,7 @@ function copySharedLibs(sdkLib, destLib) {
     } catch {
       continue;
     }
-    // Always materialize real files (no absolute symlinks into /usr).
+    // Always materialize real files (no absolute symlinks into /usr or /tmp).
     if (st.isSymbolicLink() || st.isFile()) {
       const dest = join(destLib, entry);
       try {
@@ -86,6 +88,76 @@ function copySharedLibs(sdkLib, destLib) {
     }
   }
   return copied;
+}
+
+/** Monolithic shared libLLVM (not component archives like libLLVMCore.a). */
+function findMonolithicSharedLlvm(libDir) {
+  if (!existsSync(libDir)) return null;
+  const names = readdirSync(libDir);
+  const preferred = [
+    "libLLVM.so",
+    "libLLVM.dylib",
+    "LLVM.dll",
+    "libLLVM-22.so",
+    "libLLVM-21.so",
+  ];
+  for (const name of preferred) {
+    if (names.includes(name)) return join(libDir, name);
+  }
+  const versioned = names
+    .filter((n) => /^libLLVM\.so\.\d/.test(n) || /^libLLVM\.\d.*\.dylib$/.test(n))
+    .sort();
+  if (versioned.length) return join(libDir, versioned[versioned.length - 1]);
+  return null;
+}
+
+function detectLinkMode(llvmLibDir) {
+  const sharedPath = findMonolithicSharedLlvm(llvmLibDir);
+  if (sharedPath) return { mode: "shared", sharedPath };
+  const staticCore =
+    existsSync(join(llvmLibDir, "libLLVMCore.a")) ||
+    existsSync(join(llvmLibDir, "LLVMCore.lib"));
+  if (staticCore) return { mode: "static", sharedPath: null };
+  throw new Error(
+    `LLVM SDK lib dir ${llvmLibDir} has neither shared libLLVM nor static component archives`,
+  );
+}
+
+function lldDriverFlags(llvmLibDir) {
+  const drivers = ["lldELF", "lldMachO", "lldCOFF", "lldCommon"];
+  const flags = [];
+  for (const name of drivers) {
+    const base = `lib${name}`;
+    const has =
+      existsSync(join(llvmLibDir, `${base}.a`)) ||
+      existsSync(join(llvmLibDir, `${base}.so`)) ||
+      existsSync(join(llvmLibDir, `${base}.dylib`)) ||
+      existsSync(join(llvmLibDir, `${base}.lib`)) ||
+      readdirSync(llvmLibDir).some(
+        (n) => n.startsWith(`${base}.so`) || n.startsWith(`${base}.`),
+      );
+    if (has) flags.push(`-l${name}`);
+  }
+  return flags;
+}
+
+/**
+ * llvm-config on static SDKs may emit absolute paths to system .a files that
+ * are not installed. Prefer shared -lFoo for the Node addon.
+ */
+function normalizeSystemLibs(sysLibs) {
+  return sysLibs
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((flag) => {
+      if ((flag.endsWith(".a") || flag.endsWith(".lib")) && flag.includes("/")) {
+        const base = basename(flag)
+          .replace(/^lib/, "")
+          .replace(/\.(a|lib)$/i, "");
+        return `-l${base}`;
+      }
+      return flag;
+    });
 }
 
 function platformPackageDir(platformId) {
@@ -222,9 +294,6 @@ async function main() {
   const llvmLdflags = existsSync(sdkConfig)
     ? runLlvmConfig(sdkRoot, ["--ldflags"])
     : `-L${llvmLibDir}`;
-  const llvmLibs = existsSync(sdkConfig)
-    ? runLlvmConfig(sdkRoot, ["--libs"])
-    : "-lLLVM";
   const llvmSys = existsSync(sdkConfig)
     ? runLlvmConfig(sdkRoot, ["--system-libs"])
     : "";
@@ -235,12 +304,30 @@ async function main() {
         .join(" ")
     : `-I${llvmInclude} -std=c++17`;
 
+  const link = detectLinkMode(llvmLibDir);
+  console.error(`info: LLVM link mode: ${link.mode}`);
+
+  // Official Linux tarballs are often static-only (no libLLVM.so). Prefer
+  // llvm-config --link-static/--link-shared when available.
+  let llvmLibs = "";
+  if (existsSync(sdkConfig)) {
+    try {
+      llvmLibs = runLlvmConfig(sdkRoot, [
+        link.mode === "static" ? "--link-static" : "--link-shared",
+        "--libs",
+      ]);
+    } catch {
+      llvmLibs = runLlvmConfig(sdkRoot, ["--libs"]);
+    }
+  } else if (link.mode === "shared") {
+    llvmLibs = "";
+  } else {
+    throw new Error("static LLVM SDK requires llvm-config --libs");
+  }
+
   const buildDir = join(root, "build", "Release");
   mkdirSync(buildDir, { recursive: true });
   const out = join(buildDir, "sonite_llvm.node");
-  const sources = ["native/addon.cpp", "native/backend.cpp", "native/linker.cpp"]
-    .map((s) => join(root, s))
-    .join(" ");
 
   const napiDir = napiIncludeDir();
   const nodeInc = nodeIncludeDir();
@@ -258,7 +345,31 @@ async function main() {
       ? "-Wl,-rpath,@loader_path/../lib"
       : "-Wl,-rpath,$ORIGIN/../lib";
 
-  const lldLibs = ["-llldELF", "-llldMachO", "-llldCOFF", "-llldCommon", "-lLLVM"];
+  const lldFlags = lldDriverFlags(llvmLibDir);
+  const llvmLibFlags = llvmLibs.split(/\s+/).filter(Boolean);
+  // Drop a bare -lLLVM when the SDK has no libLLVM.so / libLLVM.a (component
+  // archives only). We'll pass the shared object path explicitly if needed.
+  const filteredLlvmLibs = llvmLibFlags.filter((f) => f !== "-lLLVM");
+
+  /** @type {string[]} */
+  const linkLibs = [];
+  if (link.mode === "static") {
+    // Component archives have circular deps; group them on ELF linkers.
+    if (process.platform === "linux") {
+      linkLibs.push("-Wl,--start-group", ...lldFlags, ...filteredLlvmLibs, "-Wl,--end-group");
+    } else {
+      linkLibs.push(...lldFlags, ...filteredLlvmLibs);
+    }
+  } else {
+    linkLibs.push(...lldFlags);
+    if (filteredLlvmLibs.length) {
+      linkLibs.push(...filteredLlvmLibs);
+    } else if (link.sharedPath) {
+      linkLibs.push(link.sharedPath);
+    } else {
+      linkLibs.push("-lLLVM");
+    }
+  }
 
   const compileArgs = [
     "-shared",
@@ -280,11 +391,12 @@ async function main() {
     `-o${out}`,
     ...llvmLdflags.split(/\s+/).filter(Boolean),
     `-L${llvmLibDir}`,
-    ...lldLibs,
-    ...llvmLibs.split(/\s+/).filter(Boolean),
-    ...llvmSys.split(/\s+/).filter(Boolean),
-    rpathFlag,
+    ...linkLibs,
+    ...normalizeSystemLibs(llvmSys),
   ];
+  if (link.mode === "shared") {
+    compileArgs.push(rpathFlag);
+  }
 
   console.error("info: compiling native addon against pinned SDK…");
   const compile = spawnSync(cxx, compileArgs, {
@@ -298,24 +410,34 @@ async function main() {
     process.exit(compile.status ?? 1);
   }
 
-  // Copy shared LLVM/LLD libraries into package lib/
+  // Copy shared LLVM/LLD libraries into package lib/ (skipped for static link).
   rmSync(pkgLib, { recursive: true, force: true });
   mkdirSync(pkgLib, { recursive: true });
-  let n = copySharedLibs(llvmLibDir, pkgLib);
-  if (n === 0) {
-    const lib64 = join(sdkRoot, "lib64");
-    if (existsSync(lib64)) {
-      n = copySharedLibs(lib64, pkgLib);
+  if (link.mode === "shared") {
+    let n = copySharedLibs(llvmLibDir, pkgLib);
+    if (n === 0) {
+      const lib64 = join(sdkRoot, "lib64");
+      if (existsSync(lib64)) {
+        n = copySharedLibs(lib64, pkgLib);
+      }
     }
-  }
-  const bundled = readdirSync(pkgLib);
-  if (bundled.length === 0) {
-    console.error(
-      `error: no LLVM/LLD shared libraries found in ${llvmLibDir} to bundle`,
+    const bundled = readdirSync(pkgLib);
+    if (bundled.length === 0) {
+      console.error(
+        `error: no LLVM/LLD shared libraries found in ${llvmLibDir} to bundle`,
+      );
+      process.exit(1);
+    }
+    console.error(`info: bundled ${bundled.length} library files into ${pkgLib}`);
+  } else {
+    writeFileSync(
+      join(pkgLib, "LINK_MODE.txt"),
+      "static\n# LLVM/LLD were statically linked into sonite_llvm.node; no shared libs to ship.\n",
     );
-    process.exit(1);
+    console.error(
+      "info: static link — LLVM/LLD archived into sonite_llvm.node (no shared lib bundle)",
+    );
   }
-  console.error(`info: bundled ${bundled.length} library files into ${pkgLib}`);
 
   copyFileSync(out, join(pkgNative, "sonite_llvm.node"));
   // Dev fallback prebuild

@@ -20,29 +20,33 @@ export function validateNativeDeps(nodePath, libDir) {
   const platform = process.platform;
 
   if (platform === "linux") {
+    const linkModeFile = resolve(libDir, "LINK_MODE.txt");
+    if (existsSync(linkModeFile)) {
+      // Statically linked addon — no shared libLLVM expected at runtime.
+      return;
+    }
     const r = spawnSync("ldd", [nodePath], { encoding: "utf8" });
     if (r.status !== 0) {
       throw new Error(`ldd failed: ${r.stderr || r.stdout}`);
     }
     const problems = [];
+    let sawLlvm = false;
     for (const line of (r.stdout || "").split("\n")) {
       const m = line.match(/^\s*(\S+)\s+=>\s+(\S+)/);
       if (!m) continue;
       const name = m[1];
       const path = m[2];
       if (!LLVM_NAME.test(name) && !LLVM_NAME.test(path)) continue;
+      sawLlvm = true;
       if (path === "not" || line.includes("not found")) {
         problems.push(`unresolved: ${line.trim()}`);
         continue;
       }
       try {
         const real = realpathSync(path);
-        if (!real.startsWith(libRoot + "/") && real !== joinPath(libRoot, "")) {
-          // Allow if realpath is under libRoot
-          const under = real === libRoot || real.startsWith(libRoot + "/");
-          if (!under) {
-            problems.push(`system LLVM/LLD dependency: ${name} => ${real}`);
-          }
+        const under = real === libRoot || real.startsWith(libRoot + "/");
+        if (!under) {
+          problems.push(`system LLVM/LLD dependency: ${name} => ${real}`);
         }
       } catch {
         problems.push(`could not resolve: ${line.trim()}`);
@@ -53,10 +57,18 @@ export function validateNativeDeps(nodePath, libDir) {
         `native dependency validation failed:\n${problems.join("\n")}`,
       );
     }
+    if (!sawLlvm) {
+      // Fully static link of LLVM into the addon is OK.
+      return;
+    }
     return;
   }
 
   if (platform === "darwin") {
+    const linkModeFile = resolve(libDir, "LINK_MODE.txt");
+    if (existsSync(linkModeFile)) {
+      return;
+    }
     const r = spawnSync("otool", ["-L", nodePath], { encoding: "utf8" });
     if (r.status !== 0) {
       throw new Error(`otool failed: ${r.stderr || r.stdout}`);
